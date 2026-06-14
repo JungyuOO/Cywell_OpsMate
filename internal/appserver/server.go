@@ -12,6 +12,7 @@ type Server struct {
 	mux       *http.ServeMux
 	provider  ChatProvider
 	documents DocumentRepository
+	storage   DocumentStorage
 }
 
 func NewServer() *Server {
@@ -19,10 +20,32 @@ func NewServer() *Server {
 }
 
 func NewServerWithDependencies(provider ChatProvider, documents DocumentRepository) *Server {
+	return NewServerWithOptions(ServerOptions{
+		Provider:  provider,
+		Documents: documents,
+	})
+}
+
+type ServerOptions struct {
+	Provider  ChatProvider
+	Documents DocumentRepository
+	Storage   DocumentStorage
+}
+
+func NewServerWithOptions(options ServerOptions) *Server {
+	provider := options.Provider
+	if provider == nil {
+		provider = MockProvider{}
+	}
+	documents := options.Documents
+	if documents == nil {
+		documents = NewMemoryDocumentRepository()
+	}
 	server := &Server{
 		mux:       http.NewServeMux(),
 		provider:  provider,
 		documents: documents,
+		storage:   options.Storage,
 	}
 	server.mux.HandleFunc("/healthz", server.healthz)
 	server.mux.HandleFunc("/api/chat", server.chat)
@@ -109,12 +132,59 @@ func (s *Server) uploadDocument(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	if s.storage != nil {
+		s.uploadDocumentToStorage(w, r, file, header)
+		return
+	}
+
 	size, err := drainFile(file, header)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "could not read uploaded file")
 		return
 	}
 	document := s.documents.Create(header.Filename, size, r.Header.Get("X-Forwarded-User"))
+	writeJSON(w, http.StatusCreated, DocumentUploadResponse{
+		ID:       document.ID,
+		Filename: document.Filename,
+		Status:   document.Status,
+	})
+}
+
+func (s *Server) uploadDocumentToStorage(w http.ResponseWriter, r *http.Request, file multipart.File, header *multipart.FileHeader) {
+	documentID, err := newUUID()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not create document id")
+		return
+	}
+
+	stored, err := s.storage.Store(r.Context(), documentID, header.Filename, file)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not store uploaded file")
+		return
+	}
+
+	repository, ok := s.documents.(StoredDocumentRepository)
+	if !ok {
+		document := s.documents.Create(header.Filename, stored.SizeBytes, r.Header.Get("X-Forwarded-User"))
+		writeJSON(w, http.StatusCreated, DocumentUploadResponse{
+			ID:       document.ID,
+			Filename: document.Filename,
+			Status:   document.Status,
+		})
+		return
+	}
+
+	document, err := repository.CreateStored(r.Context(), CreateStoredDocumentInput{
+		ID:         documentID,
+		Filename:   header.Filename,
+		SizeBytes:  stored.SizeBytes,
+		ObjectURI:  stored.URI,
+		UploadedBy: r.Header.Get("X-Forwarded-User"),
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not persist document metadata")
+		return
+	}
 	writeJSON(w, http.StatusCreated, DocumentUploadResponse{
 		ID:       document.ID,
 		Filename: document.Filename,

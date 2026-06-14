@@ -34,7 +34,11 @@ func (r *PostgresDocumentRepository) List() []Document {
 }
 
 func (r *PostgresDocumentRepository) Create(filename string, sizeBytes int64, uploadedBy string) Document {
-	document, err := r.CreateContext(context.Background(), filename, sizeBytes, uploadedBy)
+	document, err := r.CreateStored(context.Background(), CreateStoredDocumentInput{
+		Filename:   filename,
+		SizeBytes:  sizeBytes,
+		UploadedBy: uploadedBy,
+	})
 	if err != nil {
 		return Document{}
 	}
@@ -53,7 +57,7 @@ func (r *PostgresDocumentRepository) MarkDeleting(id string) (Document, bool) {
 
 func (r *PostgresDocumentRepository) ListContext(ctx context.Context) ([]Document, error) {
 	rows, err := r.db.QueryContext(ctx, `
-SELECT id, filename, status, size_bytes, embedding_status, uploaded_by, created_at, last_error
+SELECT id, filename, status, size_bytes, object_uri, embedding_status, uploaded_by, created_at, last_error
 FROM cyops_documents
 WHERE namespace = $1 AND deleted_at IS NULL
 ORDER BY created_at, id`, r.namespace)
@@ -74,29 +78,43 @@ ORDER BY created_at, id`, r.namespace)
 }
 
 func (r *PostgresDocumentRepository) CreateContext(ctx context.Context, filename string, sizeBytes int64, uploadedBy string) (Document, error) {
-	id, err := r.newID()
-	if err != nil {
-		return Document{}, err
+	return r.CreateStored(ctx, CreateStoredDocumentInput{
+		Filename:   filename,
+		SizeBytes:  sizeBytes,
+		UploadedBy: uploadedBy,
+	})
+}
+
+func (r *PostgresDocumentRepository) CreateStored(ctx context.Context, input CreateStoredDocumentInput) (Document, error) {
+	id := input.ID
+	if id == "" {
+		generatedID, err := r.newID()
+		if err != nil {
+			return Document{}, err
+		}
+		id = generatedID
 	}
 	createdAt := r.now().UTC()
 	document := Document{
 		ID:              id,
-		Filename:        filename,
+		Filename:        input.Filename,
 		Status:          "uploaded",
-		SizeBytes:       sizeBytes,
+		SizeBytes:       input.SizeBytes,
+		ObjectURI:       input.ObjectURI,
 		EmbeddingStatus: "pending",
-		UploadedBy:      uploadedBy,
+		UploadedBy:      input.UploadedBy,
 		CreatedAt:       createdAt,
 	}
 
-	_, err = r.db.ExecContext(ctx, `
+	_, err := r.db.ExecContext(ctx, `
 INSERT INTO cyops_documents (
-	id, namespace, filename, size_bytes, status, embedding_status, uploaded_by, created_at, updated_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)`,
+	id, namespace, filename, size_bytes, object_uri, status, embedding_status, uploaded_by, created_at, updated_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)`,
 		document.ID,
 		r.namespace,
 		document.Filename,
 		document.SizeBytes,
+		document.ObjectURI,
 		document.Status,
 		document.EmbeddingStatus,
 		document.UploadedBy,
@@ -110,7 +128,7 @@ INSERT INTO cyops_documents (
 
 func (r *PostgresDocumentRepository) GetContext(ctx context.Context, id string) (Document, error) {
 	row := r.db.QueryRowContext(ctx, `
-SELECT id, filename, status, size_bytes, embedding_status, uploaded_by, created_at, last_error
+SELECT id, filename, status, size_bytes, object_uri, embedding_status, uploaded_by, created_at, last_error
 FROM cyops_documents
 WHERE id = $1 AND namespace = $2 AND deleted_at IS NULL`, id, r.namespace)
 	return scanDocument(row)
@@ -121,7 +139,7 @@ func (r *PostgresDocumentRepository) MarkDeletingContext(ctx context.Context, id
 UPDATE cyops_documents
 SET status = 'deleting', updated_at = $3
 WHERE id = $1 AND namespace = $2 AND deleted_at IS NULL
-RETURNING id, filename, status, size_bytes, embedding_status, uploaded_by, created_at, last_error`,
+RETURNING id, filename, status, size_bytes, object_uri, embedding_status, uploaded_by, created_at, last_error`,
 		id,
 		r.namespace,
 		r.now().UTC(),
@@ -140,6 +158,7 @@ func scanDocument(scanner documentScanner) (Document, error) {
 		&document.Filename,
 		&document.Status,
 		&document.SizeBytes,
+		&document.ObjectURI,
 		&document.EmbeddingStatus,
 		&document.UploadedBy,
 		&document.CreatedAt,

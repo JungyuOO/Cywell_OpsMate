@@ -1,6 +1,7 @@
 package appserver
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -42,22 +43,35 @@ func (r *MemoryDocumentRepository) List() []Document {
 }
 
 func (r *MemoryDocumentRepository) Create(filename string, sizeBytes int64, uploadedBy string) Document {
+	document, _ := r.CreateStored(context.Background(), CreateStoredDocumentInput{
+		Filename:   filename,
+		SizeBytes:  sizeBytes,
+		UploadedBy: uploadedBy,
+	})
+	return document
+}
+
+func (r *MemoryDocumentRepository) CreateStored(_ context.Context, input CreateStoredDocumentInput) (Document, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	id := fmt.Sprintf("doc-%03d", r.nextID)
+	id := input.ID
+	if id == "" {
+		id = fmt.Sprintf("doc-%03d", r.nextID)
+	}
 	r.nextID++
 	document := Document{
 		ID:              id,
-		Filename:        filename,
+		Filename:        input.Filename,
 		Status:          "uploaded",
-		SizeBytes:       sizeBytes,
+		SizeBytes:       input.SizeBytes,
+		ObjectURI:       input.ObjectURI,
 		EmbeddingStatus: "pending",
-		UploadedBy:      uploadedBy,
+		UploadedBy:      input.UploadedBy,
 		CreatedAt:       r.now().UTC(),
 	}
 	r.documents[id] = document
-	return document
+	return document, nil
 }
 
 func (r *MemoryDocumentRepository) Get(id string) (Document, bool) {

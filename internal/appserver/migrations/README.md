@@ -2,8 +2,9 @@
 
 This directory holds SQL skeletons for the CYOps appserver data model.
 
-v0.0.5 records schema shape only. Runtime migration application and PostgreSQL
-repository wiring are deferred to v0.0.6.
+v0.0.7 applies these SQL files through the appserver migration runner when a
+PostgreSQL DSN is configured. Keep SQL idempotent because startup may execute it
+more than once.
 
 `0001_cyops_rag_schema.sql` intentionally uses `BYTEA` for the embedding
 placeholder. Replace it with a pgvector `VECTOR(n)` column when the embedding
