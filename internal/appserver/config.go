@@ -84,18 +84,24 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 			}
 		}
 		repository := NewPostgresDocumentRepository(db, config.Namespace)
+		metrics := NewRetrievalMetrics()
 		documents = repository
 		retriever = PostgresRetriever{
 			Repository: repository,
 			Embedder:   NewEmbeddingProviderFromConfig(config),
 			Mode:       config.RetrievalMode,
+			Observer:   metrics,
 			SlowAfter:  config.RetrievalSlow,
 		}
-	}
-
-	var storage DocumentStorage
-	if config.DocumentStoragePath != "" {
-		storage = LocalDocumentStorage{BasePath: config.DocumentStoragePath}
+		return NewServerWithOptions(ServerOptions{
+			Provider: LightspeedProvider{
+				Config: LightspeedProviderConfig{EndpointURL: config.LightspeedEndpoint},
+			},
+			Documents: documents,
+			Storage:   storageFromConfig(config),
+			Retriever: retriever,
+			Metrics:   metrics,
+		}), nil
 	}
 
 	return NewServerWithOptions(ServerOptions{
@@ -103,9 +109,16 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 			Config: LightspeedProviderConfig{EndpointURL: config.LightspeedEndpoint},
 		},
 		Documents: documents,
-		Storage:   storage,
+		Storage:   storageFromConfig(config),
 		Retriever: retriever,
 	}), nil
+}
+
+func storageFromConfig(config AppConfig) DocumentStorage {
+	if config.DocumentStoragePath == "" {
+		return nil
+	}
+	return LocalDocumentStorage{BasePath: config.DocumentStoragePath}
 }
 
 func retrievalModeOrDefault(value string) string {
