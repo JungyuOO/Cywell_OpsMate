@@ -213,6 +213,81 @@ func TestPostgresIngestionIntegration(t *testing.T) {
 	}
 }
 
+func TestPostgresEmbeddingIntegration(t *testing.T) {
+	dsn := os.Getenv("CYOPS_POSTGRES_TEST_DSN")
+	if dsn == "" {
+		t.Skip("CYOPS_POSTGRES_TEST_DSN is not set")
+	}
+
+	ctx := context.Background()
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	if err := db.PingContext(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := ApplyMigrations(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(ctx, "TRUNCATE cyops_chat_messages, cyops_chat_sessions, cyops_document_embeddings, cyops_document_chunks, cyops_documents"); err != nil {
+		t.Fatal(err)
+	}
+
+	repository := NewPostgresDocumentRepository(db, "opsmate")
+	repository.newID = fixedIDs(
+		"00000000-0000-4000-8000-000000000011",
+		"00000000-0000-4000-8000-000000000012",
+	)
+	document, err := repository.CreateStored(ctx, CreateStoredDocumentInput{
+		Filename:   "runbook.md",
+		SizeBytes:  20,
+		ObjectURI:  "/tmp/runbook.md",
+		UploadedBy: "admin",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.ReplaceChunks(ctx, document.ID, []DocumentChunk{{
+		Text:        "check pod status",
+		TokenCount:  3,
+		SourceStart: 0,
+		SourceEnd:   16,
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repository.CompleteIngestion(ctx, document.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	embedded, err := EmbeddingService{
+		Repository: repository,
+		Provider:   DeterministicEmbeddingProvider{Dimensions: 8},
+	}.EmbedDocument(ctx, document.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if embedded.EmbeddingStatus != "ready" {
+		t.Fatalf("embedding status = %q, want ready", embedded.EmbeddingStatus)
+	}
+
+	vectors, err := repository.ListEmbeddingsContext(ctx, document.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(vectors) != 1 {
+		t.Fatalf("vectors len = %d, want 1", len(vectors))
+	}
+	if vectors[0].Model != MockEmbeddingModel {
+		t.Fatalf("model = %q", vectors[0].Model)
+	}
+	if vectors[0].Dimensions != 8 || len(vectors[0].Embedding) != 8 {
+		t.Fatalf("vector = %+v, want 8 dimensions and 8 bytes", vectors[0])
+	}
+}
+
 func fixedIDs(ids ...string) func() (string, error) {
 	index := 0
 	return func() (string, error) {
