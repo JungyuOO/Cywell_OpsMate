@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"os"
+	"strconv"
 	"strings"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -14,6 +15,10 @@ const (
 	envNamespace           = "CYOPS_NAMESPACE"
 	envDocumentStoragePath = "CYOPS_DOCUMENT_STORAGE_PATH"
 	envLightspeedEndpoint  = "CYOPS_LIGHTSPEED_ENDPOINT"
+	envEmbeddingEndpoint   = "CYOPS_EMBEDDING_ENDPOINT"
+	envEmbeddingModel      = "CYOPS_EMBEDDING_MODEL"
+	envEmbeddingDimensions = "CYOPS_EMBEDDING_DIMENSIONS"
+	envPGVectorRequired    = "CYOPS_PGVECTOR_REQUIRED"
 )
 
 type AppConfig struct {
@@ -21,6 +26,10 @@ type AppConfig struct {
 	Namespace           string
 	DocumentStoragePath string
 	LightspeedEndpoint  string
+	EmbeddingEndpoint   string
+	EmbeddingModel      string
+	EmbeddingDimensions int
+	PGVectorRequired    bool
 }
 
 func LoadConfigFromEnv() AppConfig {
@@ -28,16 +37,22 @@ func LoadConfigFromEnv() AppConfig {
 	if namespace == "" {
 		namespace = "default"
 	}
+	dimensions, _ := strconv.Atoi(strings.TrimSpace(os.Getenv(envEmbeddingDimensions)))
 	return AppConfig{
 		PostgresDSN:         strings.TrimSpace(os.Getenv(envPostgresDSN)),
 		Namespace:           namespace,
 		DocumentStoragePath: strings.TrimSpace(os.Getenv(envDocumentStoragePath)),
 		LightspeedEndpoint:  strings.TrimSpace(os.Getenv(envLightspeedEndpoint)),
+		EmbeddingEndpoint:   strings.TrimSpace(os.Getenv(envEmbeddingEndpoint)),
+		EmbeddingModel:      strings.TrimSpace(os.Getenv(envEmbeddingModel)),
+		EmbeddingDimensions: dimensions,
+		PGVectorRequired:    parseBool(os.Getenv(envPGVectorRequired)),
 	}
 }
 
 func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error) {
 	documents := DocumentRepository(NewMemoryDocumentRepository())
+	var retriever Retriever
 	if config.PostgresDSN != "" {
 		db, err := sql.Open("pgx", config.PostgresDSN)
 		if err != nil {
@@ -51,7 +66,18 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 			_ = db.Close()
 			return nil, err
 		}
-		documents = NewPostgresDocumentRepository(db, config.Namespace)
+		if config.PGVectorRequired {
+			if err := CheckPGVectorReady(ctx, db); err != nil {
+				_ = db.Close()
+				return nil, err
+			}
+		}
+		repository := NewPostgresDocumentRepository(db, config.Namespace)
+		documents = repository
+		retriever = PostgresRetriever{
+			Repository: repository,
+			Embedder:   NewEmbeddingProviderFromConfig(config),
+		}
 	}
 
 	var storage DocumentStorage
@@ -65,5 +91,29 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 		},
 		Documents: documents,
 		Storage:   storage,
+		Retriever: retriever,
 	}), nil
+}
+
+func NewEmbeddingProviderFromConfig(config AppConfig) EmbeddingProvider {
+	if config.EmbeddingEndpoint == "" {
+		return DeterministicEmbeddingProvider{
+			Model:      config.EmbeddingModel,
+			Dimensions: config.EmbeddingDimensions,
+		}
+	}
+	return HTTPEmbeddingProvider{
+		EndpointURL: config.EmbeddingEndpoint,
+		Model:       config.EmbeddingModel,
+		Dimensions:  config.EmbeddingDimensions,
+	}
+}
+
+func parseBool(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "y", "on":
+		return true
+	default:
+		return false
+	}
 }

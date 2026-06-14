@@ -1,9 +1,12 @@
 package appserver
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
 const MockEmbeddingModel = "cyops-mock-embedding-v1"
@@ -22,6 +25,77 @@ type EmbeddingProvider interface {
 type DeterministicEmbeddingProvider struct {
 	Model      string
 	Dimensions int
+}
+
+type HTTPEmbeddingProvider struct {
+	EndpointURL string
+	Model       string
+	Dimensions  int
+	Client      HTTPDoer
+}
+
+func (p HTTPEmbeddingProvider) Embed(ctx context.Context, chunks []DocumentChunk) ([]EmbeddingVector, error) {
+	if p.EndpointURL == "" {
+		return nil, fmt.Errorf("embedding endpoint is required")
+	}
+	body, err := json.Marshal(map[string]any{
+		"model":      p.Model,
+		"dimensions": p.Dimensions,
+		"chunks":     embeddingProviderChunks(chunks),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, p.EndpointURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Content-Type", "application/json")
+
+	client := p.Client
+	if client == nil {
+		client = http.DefaultClient
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return nil, fmt.Errorf("embedding provider returned status %d", response.StatusCode)
+	}
+
+	var decoded struct {
+		Vectors []struct {
+			ChunkID    string `json:"chunkId"`
+			Model      string `json:"model"`
+			Dimensions int    `json:"dimensions"`
+			Embedding  []byte `json:"embedding"`
+		} `json:"vectors"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&decoded); err != nil {
+		return nil, err
+	}
+
+	vectors := make([]EmbeddingVector, 0, len(decoded.Vectors))
+	for _, vector := range decoded.Vectors {
+		model := vector.Model
+		if model == "" {
+			model = p.Model
+		}
+		dimensions := vector.Dimensions
+		if dimensions == 0 {
+			dimensions = p.Dimensions
+		}
+		vectors = append(vectors, EmbeddingVector{
+			ChunkID:    vector.ChunkID,
+			Model:      model,
+			Dimensions: dimensions,
+			Embedding:  vector.Embedding,
+		})
+	}
+	return vectors, nil
 }
 
 func (p DeterministicEmbeddingProvider) Embed(ctx context.Context, chunks []DocumentChunk) ([]EmbeddingVector, error) {
@@ -55,6 +129,17 @@ func (p DeterministicEmbeddingProvider) Embed(ctx context.Context, chunks []Docu
 		})
 	}
 	return vectors, nil
+}
+
+func embeddingProviderChunks(chunks []DocumentChunk) []map[string]string {
+	payload := make([]map[string]string, 0, len(chunks))
+	for _, chunk := range chunks {
+		payload = append(payload, map[string]string{
+			"chunkId": chunk.ID,
+			"text":    chunk.Text,
+		})
+	}
+	return payload
 }
 
 type EmbeddingService struct {
