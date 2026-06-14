@@ -2,15 +2,15 @@
 
 ## 작업 내용
 
-- [ ] `internal/controller/appserver`에 Deployment/Service builder를 추가한다.
-- [ ] Lightspeed API endpoint와 Secret 참조를 appserver 환경변수로 전달한다.
-- [ ] appserver image 기본값을 한 곳에서 관리한다.
-- [ ] desired object shape를 단위 테스트로 고정한다.
+- [x] `internal/controller/appserver`에 Deployment/Service builder를 추가한다.
+- [x] Lightspeed API endpoint와 Secret 참조를 appserver 환경변수로 전달한다.
+- [x] appserver image 기본값을 한 곳에서 관리한다.
+- [x] desired object shape를 단위 테스트로 고정한다.
 
 ## 검증
 
-- [ ] `go test ./internal/controller/appserver`
-- [ ] `go test ./...`
+- [x] `go test ./internal/controller/appserver`
+- [x] `go test ./...`
 
 ## 남은 범위
 
