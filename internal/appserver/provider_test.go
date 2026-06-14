@@ -1,6 +1,12 @@
 package appserver
 
-import "testing"
+import (
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
 
 func TestMinimalProviderContextOmitsDocumentText(t *testing.T) {
 	context := MinimalProviderContext([]Citation{
@@ -27,5 +33,32 @@ func TestLightspeedProviderSkeletonDoesNotCallExternalAPI(t *testing.T) {
 	}
 	if response.RawProvider != "lightspeed" {
 		t.Fatalf("provider = %q, want lightspeed", response.RawProvider)
+	}
+}
+
+func TestLightspeedProviderPostsToConfiguredEndpoint(t *testing.T) {
+	var body string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("method = %s, want POST", r.Method)
+		}
+		buffer, _ := io.ReadAll(r.Body)
+		body = string(buffer)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"answer":"provider answer"}`))
+	}))
+	defer server.Close()
+
+	provider := LightspeedProvider{Config: LightspeedProviderConfig{EndpointURL: server.URL}}
+
+	response, err := provider.Chat(ProviderRequest{Message: "hello"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if response.Answer != "provider answer" {
+		t.Fatalf("answer = %q, want provider answer", response.Answer)
+	}
+	if !strings.Contains(body, `"message":"hello"`) {
+		t.Fatalf("request body = %q, want message", body)
 	}
 }

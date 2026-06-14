@@ -29,7 +29,7 @@
 | --- | --- | --- | --- |
 | Phase 1 | PostgreSQL document repository | 완료 | repository implementation, tests |
 | Phase 2 | Docker PostgreSQL integration verification | 완료 | docker-based test evidence |
-| Phase 3 | storage/provider wiring refinements | 진행 예정 | appserver dependency wiring notes |
+| Phase 3 | storage/provider wiring refinements | 완료 | appserver dependency wiring notes |
 | Phase 4 | v0.0.7 ingestion handoff | 진행 예정 | ingestion/embedding implementation scope |
 
 ## 5) 마이그레이션 또는 운영 전략
