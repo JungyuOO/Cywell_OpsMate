@@ -2,6 +2,9 @@ package appserver
 
 import (
 	"bytes"
+	"context"
+	"errors"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -113,6 +116,61 @@ func TestDocumentsUploadListDetailAndDelete(t *testing.T) {
 	if !strings.Contains(deleteRecorder.Body.String(), `"status":"deleting"`) {
 		t.Fatalf("delete body = %q, want deleting", deleteRecorder.Body.String())
 	}
+}
+
+func TestDocumentsUploadStoresFileAndPersistsObjectURI(t *testing.T) {
+	repository := NewMemoryDocumentRepository()
+	server := NewServerWithOptions(ServerOptions{
+		Provider:  MockProvider{},
+		Documents: repository,
+		Storage:   LocalDocumentStorage{BasePath: t.TempDir()},
+	})
+
+	upload := multipartRequest(t, "file", "../runbook.txt", "check pod status")
+	uploadRecorder := httptest.NewRecorder()
+	server.ServeHTTP(uploadRecorder, upload)
+	if uploadRecorder.Code != http.StatusCreated {
+		t.Fatalf("upload status = %d, want %d: %s", uploadRecorder.Code, http.StatusCreated, uploadRecorder.Body.String())
+	}
+
+	items := repository.List()
+	if len(items) != 1 {
+		t.Fatalf("documents len = %d, want 1", len(items))
+	}
+	if items[0].ObjectURI == "" {
+		t.Fatal("object uri is empty")
+	}
+	if strings.Contains(items[0].ObjectURI, "..") {
+		t.Fatalf("object uri = %q, want sanitized path", items[0].ObjectURI)
+	}
+	if items[0].SizeBytes != int64(len("check pod status")) {
+		t.Fatalf("size = %d, want uploaded content size", items[0].SizeBytes)
+	}
+}
+
+func TestDocumentsUploadDoesNotCreateMetadataWhenStorageFails(t *testing.T) {
+	repository := NewMemoryDocumentRepository()
+	server := NewServerWithOptions(ServerOptions{
+		Provider:  MockProvider{},
+		Documents: repository,
+		Storage:   failingStorage{},
+	})
+
+	upload := multipartRequest(t, "file", "runbook.txt", "check pod status")
+	uploadRecorder := httptest.NewRecorder()
+	server.ServeHTTP(uploadRecorder, upload)
+	if uploadRecorder.Code != http.StatusInternalServerError {
+		t.Fatalf("upload status = %d, want %d: %s", uploadRecorder.Code, http.StatusInternalServerError, uploadRecorder.Body.String())
+	}
+	if len(repository.List()) != 0 {
+		t.Fatalf("documents len = %d, want 0", len(repository.List()))
+	}
+}
+
+type failingStorage struct{}
+
+func (failingStorage) Store(context.Context, string, string, io.Reader) (StoredObject, error) {
+	return StoredObject{}, errors.New("storage failed")
 }
 
 func multipartRequest(t *testing.T, field string, filename string, content string) *http.Request {

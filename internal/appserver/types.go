@@ -1,6 +1,9 @@
 package appserver
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type ChatRequest struct {
 	SessionID      string         `json:"sessionId,omitempty"`
@@ -36,6 +39,7 @@ type Document struct {
 	Filename        string    `json:"filename"`
 	Status          string    `json:"status"`
 	SizeBytes       int64     `json:"sizeBytes"`
+	ObjectURI       string    `json:"objectUri,omitempty"`
 	ChunkCount      int       `json:"chunkCount"`
 	EmbeddingStatus string    `json:"embeddingStatus"`
 	UploadedBy      string    `json:"uploadedBy"`
@@ -84,4 +88,16 @@ type DocumentRepository interface {
 	Create(filename string, sizeBytes int64, uploadedBy string) Document
 	Get(id string) (Document, bool)
 	MarkDeleting(id string) (Document, bool)
+}
+
+type CreateStoredDocumentInput struct {
+	ID         string
+	Filename   string
+	SizeBytes  int64
+	ObjectURI  string
+	UploadedBy string
+}
+
+type StoredDocumentRepository interface {
+	CreateStored(ctx context.Context, input CreateStoredDocumentInput) (Document, error)
 }
