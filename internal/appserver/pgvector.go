@@ -13,6 +13,20 @@ func CheckPGVectorReady(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
+func ApplyPGVectorEmbeddingMigration(ctx context.Context, db *sql.DB, dimensions int) error {
+	query, err := PGVectorEmbeddingMigrationSQL(dimensions)
+	if err != nil {
+		return err
+	}
+	if err := CheckPGVectorReady(ctx, db); err != nil {
+		return err
+	}
+	if _, err := db.ExecContext(ctx, query); err != nil {
+		return fmt.Errorf("pgvector embedding migration failed: %w", err)
+	}
+	return nil
+}
+
 func PGVectorEmbeddingMigrationSQL(dimensions int) (string, error) {
 	if dimensions <= 0 {
 		return "", fmt.Errorf("embedding dimensions must be positive")

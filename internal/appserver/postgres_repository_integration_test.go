@@ -3,6 +3,7 @@ package appserver
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -391,6 +392,118 @@ func TestPostgresRetrieverRanksEmbeddedChunks(t *testing.T) {
 	if result.Citations[0].Rank != 1 || result.Citations[0].Score != "1.0000" {
 		t.Fatalf("citation = %+v", result.Citations[0])
 	}
+}
+
+func TestPGVectorLiveRAGSmoke(t *testing.T) {
+	dsn := os.Getenv("CYOPS_PGVECTOR_TEST_DSN")
+	if dsn == "" {
+		t.Skip("CYOPS_PGVECTOR_TEST_DSN is not set")
+	}
+
+	ctx := context.Background()
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	if err := db.PingContext(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := ApplyMigrations(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(ctx, "TRUNCATE cyops_chat_messages, cyops_chat_sessions, cyops_document_embeddings, cyops_document_chunks, cyops_documents"); err != nil {
+		t.Fatal(err)
+	}
+	if err := ApplyPGVectorEmbeddingMigration(ctx, db, 2); err != nil {
+		t.Fatal(err)
+	}
+	if err := seedPGVectorSmokeData(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+
+	metrics := NewRetrievalMetrics()
+	server := NewServerWithOptions(ServerOptions{
+		Provider:  staticAnswerProvider{answer: "Use the cited runbook."},
+		Documents: NewPostgresDocumentRepository(db, "opsmate"),
+		Retriever: PostgresRetriever{
+			Repository: NewPostgresDocumentRepository(db, "opsmate"),
+			Embedder: staticEmbeddingProvider{
+				vectors: []EmbeddingVector{{ChunkID: "query", Model: "test", Dimensions: 2, Embedding: []byte{10, 0}}},
+			},
+			Mode:      "pgvector",
+			Observer:  metrics,
+			SlowAfter: time.Nanosecond,
+		},
+		Metrics: metrics,
+	})
+
+	chat := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"message":"pod status","rag":{"enabled":true,"documentIds":["00000000-0000-4000-8000-000000000101"]}}`))
+	chatRecorder := httptest.NewRecorder()
+	server.ServeHTTP(chatRecorder, chat)
+	if chatRecorder.Code != http.StatusOK {
+		t.Fatalf("chat status = %d, want %d: %s", chatRecorder.Code, http.StatusOK, chatRecorder.Body.String())
+	}
+	var chatResponse ChatResponse
+	if err := json.NewDecoder(chatRecorder.Body).Decode(&chatResponse); err != nil {
+		t.Fatal(err)
+	}
+	if len(chatResponse.Citations) == 0 {
+		t.Fatalf("citations len = 0, want pgvector-ranked citation")
+	}
+	if chatResponse.Citations[0].ChunkID != "00000000-0000-4000-8000-000000000103" {
+		t.Fatalf("first citation = %+v, want pod status chunk first", chatResponse.Citations[0])
+	}
+	if chatResponse.Citations[0].Score != "1.0000" {
+		t.Fatalf("first citation score = %q, want 1.0000", chatResponse.Citations[0].Score)
+	}
+
+	metricsRequest := httptest.NewRequest(http.MethodGet, "/api/ops/retrieval-metrics", nil)
+	metricsRecorder := httptest.NewRecorder()
+	server.ServeHTTP(metricsRecorder, metricsRequest)
+	if metricsRecorder.Code != http.StatusOK {
+		t.Fatalf("metrics status = %d, want %d: %s", metricsRecorder.Code, http.StatusOK, metricsRecorder.Body.String())
+	}
+	var snapshot RetrievalMetricsSnapshot
+	if err := json.NewDecoder(metricsRecorder.Body).Decode(&snapshot); err != nil {
+		t.Fatal(err)
+	}
+	if snapshot.ByMode["pgvector"] != 1 || snapshot.Total != 1 {
+		t.Fatalf("metrics snapshot = %+v, want one pgvector retrieval", snapshot)
+	}
+	if snapshot.Last.ResultCount != len(chatResponse.Citations) {
+		t.Fatalf("last result count = %d, want %d", snapshot.Last.ResultCount, len(chatResponse.Citations))
+	}
+}
+
+func seedPGVectorSmokeData(ctx context.Context, db *sql.DB) error {
+	_, err := db.ExecContext(ctx, `
+INSERT INTO cyops_documents (
+	id, namespace, filename, size_bytes, object_uri, status, embedding_status, uploaded_by, created_at, updated_at
+) VALUES (
+	'00000000-0000-4000-8000-000000000101', 'opsmate', 'runbook.md', 32, '/tmp/runbook.md', 'ready', 'ready', 'admin', now(), now()
+);
+INSERT INTO cyops_document_chunks (
+	id, document_id, chunk_index, text, token_count, source_start, source_end
+) VALUES
+	('00000000-0000-4000-8000-000000000102', '00000000-0000-4000-8000-000000000101', 0, 'restart deployment', 2, 0, 18),
+	('00000000-0000-4000-8000-000000000103', '00000000-0000-4000-8000-000000000101', 1, 'check pod status', 3, 19, 35);
+INSERT INTO cyops_document_embeddings (
+	chunk_id, model, dimensions, embedding
+) VALUES
+	('00000000-0000-4000-8000-000000000102', 'test', 2, '[0,10]'::vector),
+	('00000000-0000-4000-8000-000000000103', 'test', 2, '[10,0]'::vector);
+`)
+	return err
+}
+
+type staticAnswerProvider struct {
+	answer string
+}
+
+func (p staticAnswerProvider) Chat(ProviderRequest) (ProviderResponse, error) {
+	return ProviderResponse{Answer: p.answer, RawProvider: "test"}, nil
 }
 
 type staticEmbeddingProvider struct {

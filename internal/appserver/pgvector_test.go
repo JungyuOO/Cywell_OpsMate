@@ -1,6 +1,7 @@
 package appserver
 
 import (
+	"context"
 	"strings"
 	"testing"
 )
@@ -27,5 +28,11 @@ func TestPGVectorEmbeddingMigrationSQLBuildsVectorMigration(t *testing.T) {
 	}
 	if !strings.Contains(sql, "USING NULL::VECTOR(768)") {
 		t.Fatalf("sql = %q, want reset strategy", sql)
+	}
+}
+
+func TestApplyPGVectorEmbeddingMigrationValidatesDimensionsBeforeExec(t *testing.T) {
+	if err := ApplyPGVectorEmbeddingMigration(context.Background(), nil, 0); err == nil {
+		t.Fatal("expected dimensions error")
 	}
 }
