@@ -82,5 +82,5 @@
 - [x] PostgreSQL을 기본 DB 방향으로 명시한다.
 - [x] AIOps/RAG는 후속 버전 구현 범위로 분리한다.
 - [x] Go 검증 명령을 `Makefile`에 정의한다.
-- [ ] `go fmt`, `go test`, `go build`는 로컬 Go 설치 후 수행한다.
+- [x] `go fmt`, `go test`, `go build`는 로컬 Go 설치 후 수행한다.
 - [x] 다음 버전으로 이관할 작업을 phase 문서에 남긴다.

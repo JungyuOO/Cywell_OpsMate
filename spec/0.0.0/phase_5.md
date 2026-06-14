@@ -9,14 +9,14 @@
 
 ## 검증
 
-- [ ] `go fmt ./...` - 현재 로컬 PATH에 Go가 없어 미수행
-- [ ] `go test ./...` - 현재 로컬 PATH에 Go가 없어 미수행
-- [ ] `go build -o bin/manager ./cmd/manager` - 현재 로컬 PATH에 Go가 없어 미수행
+- [x] `go fmt ./...`
+- [x] `go test ./...`
+- [x] `go build -o .cache/manager.exe ./cmd/manager`
 - [x] `git diff --cached` 검토
 
 ## 남은 범위
 
-- [ ] Go toolchain이 설치된 환경에서 `make fmt`, `make test`, `make build`를 수행한다.
+- [x] Go toolchain이 설치된 환경에서 `go fmt ./...`, `go test ./...`, `go build -o .cache/manager.exe ./cmd/manager`를 수행한다.
 - [ ] 다음 버전 폴더를 생성한다.
 - [ ] 다음 버전 브랜치로 전환한다.
 - [ ] controller-runtime/Kubebuilder dependency를 도입한다.
