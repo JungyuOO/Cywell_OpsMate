@@ -73,6 +73,65 @@ func TestChatRejectsMissingMessage(t *testing.T) {
 	}
 }
 
+func TestChatRAGAddsRetrieverContextAndCitations(t *testing.T) {
+	provider := &capturingProvider{answer: "Use the cited runbook."}
+	server := NewServerWithOptions(ServerOptions{
+		Provider:  provider,
+		Documents: NewMemoryDocumentRepository(),
+		Retriever: staticRetriever{
+			result: RetrievalResult{
+				Context: []ProviderContext{{
+					Type:   "rag_chunk",
+					Text:   "Check pod status before restart.",
+					Source: "doc-001/chunk-001",
+				}},
+				Citations: []Citation{{
+					DocumentID: "doc-001",
+					Title:      "runbook.md",
+					ChunkID:    "chunk-001",
+				}},
+			},
+		},
+	})
+
+	request := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"message":"What should I check?","rag":{"enabled":true,"documentIds":["doc-001"]}}`))
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	if len(provider.request.Context) != 1 {
+		t.Fatalf("provider context len = %d, want 1", len(provider.request.Context))
+	}
+	if provider.request.Context[0].Text != "Check pod status before restart." {
+		t.Fatalf("provider context text = %q", provider.request.Context[0].Text)
+	}
+	if !strings.Contains(recorder.Body.String(), `"citations":[{"documentId":"doc-001","title":"runbook.md","chunkId":"chunk-001"}]`) {
+		t.Fatalf("body = %q, want citation", recorder.Body.String())
+	}
+}
+
+type capturingProvider struct {
+	answer  string
+	request ProviderRequest
+}
+
+func (p *capturingProvider) Chat(request ProviderRequest) (ProviderResponse, error) {
+	p.request = request
+	return ProviderResponse{Answer: p.answer, RawProvider: "test"}, nil
+}
+
+type staticRetriever struct {
+	result RetrievalResult
+	err    error
+}
+
+func (r staticRetriever) Retrieve(context.Context, RetrievalRequest) (RetrievalResult, error) {
+	return r.result, r.err
+}
+
 func TestDocumentsUploadListDetailAndDelete(t *testing.T) {
 	server := NewServer()
 

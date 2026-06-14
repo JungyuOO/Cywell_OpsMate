@@ -192,6 +192,49 @@ RETURNING id, filename, status, size_bytes, object_uri, embedding_status, upload
 	return scanDocument(row)
 }
 
+func (r *PostgresDocumentRepository) BeginEmbedding(ctx context.Context, id string) (Document, error) {
+	row := r.db.QueryRowContext(ctx, `
+UPDATE cyops_documents
+SET embedding_status = 'processing', last_error = '', updated_at = $3
+WHERE id = $1 AND namespace = $2 AND deleted_at IS NULL
+RETURNING id, filename, status, size_bytes, object_uri, embedding_status, uploaded_by, created_at, last_error,
+	(SELECT COUNT(*) FROM cyops_document_chunks c WHERE c.document_id = cyops_documents.id)`,
+		id,
+		r.namespace,
+		r.now().UTC(),
+	)
+	return scanDocument(row)
+}
+
+func (r *PostgresDocumentRepository) CompleteEmbedding(ctx context.Context, id string) (Document, error) {
+	row := r.db.QueryRowContext(ctx, `
+UPDATE cyops_documents
+SET embedding_status = 'ready', last_error = '', updated_at = $3
+WHERE id = $1 AND namespace = $2 AND deleted_at IS NULL
+RETURNING id, filename, status, size_bytes, object_uri, embedding_status, uploaded_by, created_at, last_error,
+	(SELECT COUNT(*) FROM cyops_document_chunks c WHERE c.document_id = cyops_documents.id)`,
+		id,
+		r.namespace,
+		r.now().UTC(),
+	)
+	return scanDocument(row)
+}
+
+func (r *PostgresDocumentRepository) FailEmbedding(ctx context.Context, id string, message string) (Document, error) {
+	row := r.db.QueryRowContext(ctx, `
+UPDATE cyops_documents
+SET embedding_status = 'failed', last_error = $3, updated_at = $4
+WHERE id = $1 AND namespace = $2 AND deleted_at IS NULL
+RETURNING id, filename, status, size_bytes, object_uri, embedding_status, uploaded_by, created_at, last_error,
+	(SELECT COUNT(*) FROM cyops_document_chunks c WHERE c.document_id = cyops_documents.id)`,
+		id,
+		r.namespace,
+		message,
+		r.now().UTC(),
+	)
+	return scanDocument(row)
+}
+
 func (r *PostgresDocumentRepository) ReplaceChunks(ctx context.Context, documentID string, chunks []DocumentChunk) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -257,6 +300,60 @@ ORDER BY chunk_index`, documentID)
 		chunks = append(chunks, chunk)
 	}
 	return chunks, rows.Err()
+}
+
+func (r *PostgresDocumentRepository) ReplaceEmbeddings(ctx context.Context, vectors []EmbeddingVector) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, vector := range vectors {
+		if _, err := tx.ExecContext(ctx, "DELETE FROM cyops_document_embeddings WHERE chunk_id = $1", vector.ChunkID); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO cyops_document_embeddings (
+	chunk_id, model, dimensions, embedding
+) VALUES ($1, $2, $3, $4)`,
+			vector.ChunkID,
+			vector.Model,
+			vector.Dimensions,
+			vector.Embedding,
+		); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (r *PostgresDocumentRepository) ListEmbeddingsContext(ctx context.Context, documentID string) ([]EmbeddingVector, error) {
+	rows, err := r.db.QueryContext(ctx, `
+SELECT e.chunk_id, e.model, e.dimensions, e.embedding
+FROM cyops_document_embeddings e
+JOIN cyops_document_chunks c ON c.id = e.chunk_id
+WHERE c.document_id = $1
+ORDER BY c.chunk_index`, documentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var vectors []EmbeddingVector
+	for rows.Next() {
+		var vector EmbeddingVector
+		if err := rows.Scan(
+			&vector.ChunkID,
+			&vector.Model,
+			&vector.Dimensions,
+			&vector.Embedding,
+		); err != nil {
+			return nil, err
+		}
+		vectors = append(vectors, vector)
+	}
+	return vectors, rows.Err()
 }
 
 type documentScanner interface {

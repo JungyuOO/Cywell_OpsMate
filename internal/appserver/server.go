@@ -13,6 +13,7 @@ type Server struct {
 	provider  ChatProvider
 	documents DocumentRepository
 	storage   DocumentStorage
+	retriever Retriever
 }
 
 func NewServer() *Server {
@@ -30,6 +31,7 @@ type ServerOptions struct {
 	Provider  ChatProvider
 	Documents DocumentRepository
 	Storage   DocumentStorage
+	Retriever Retriever
 }
 
 func NewServerWithOptions(options ServerOptions) *Server {
@@ -46,6 +48,7 @@ func NewServerWithOptions(options ServerOptions) *Server {
 		provider:  provider,
 		documents: documents,
 		storage:   options.Storage,
+		retriever: options.Retriever,
 	}
 	server.mux.HandleFunc("/healthz", server.healthz)
 	server.mux.HandleFunc("/api/chat", server.chat)
@@ -91,8 +94,22 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 	if providerName == "" {
 		providerName = "mock"
 	}
+	var retrieved RetrievalResult
+	if request.RAG.Enabled && s.retriever != nil {
+		var err error
+		retrieved, err = s.retriever.Retrieve(r.Context(), RetrievalRequest{
+			Message:     request.Message,
+			DocumentIDs: request.RAG.DocumentIDs,
+		})
+		if err != nil {
+			writeError(w, http.StatusBadGateway, "retrieval failed")
+			return
+		}
+	}
+
 	providerResponse, err := s.provider.Chat(ProviderRequest{
 		Message:        request.Message,
+		Context:        retrieved.Context,
 		ClusterContext: request.ClusterContext,
 	})
 	if err != nil {
@@ -105,6 +122,7 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 		MessageID: "msg-001",
 		Answer:    providerResponse.Answer,
 		Provider:  providerName,
+		Citations: retrieved.Citations,
 		Warnings:  []string{"Review AI generated content before use."},
 	})
 }
