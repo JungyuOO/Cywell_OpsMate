@@ -2,14 +2,14 @@
 
 ## 작업 내용
 
-- [ ] document/chat/chunk/embedding table SQL skeleton을 추가한다.
-- [ ] migration 파일 위치와 적용 방식을 정한다.
-- [ ] pgvector extension 사용 경계를 문서화한다.
+- [x] document/chat/chunk/embedding table SQL skeleton을 추가한다.
+- [x] migration 파일 위치와 적용 방식을 정한다.
+- [x] pgvector extension 사용 경계를 문서화한다.
 
 ## 검증
 
-- [ ] SQL 문서 검토
-- [ ] `go test ./...`
+- [x] SQL 문서 검토
+- [x] `go test ./...`
 
 ## 남은 범위
 
