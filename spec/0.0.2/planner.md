@@ -30,7 +30,7 @@
 | Phase | 제목 | 상태 | 주요 산출물 |
 | --- | --- | --- | --- |
 | Phase 1 | appserver desired resource helper | 완료 | appserver Deployment/Service builder, tests |
-| Phase 2 | PostgreSQL desired resource helper | 진행 예정 | postgres Deployment/Service builder, tests |
+| Phase 2 | PostgreSQL desired resource helper | 완료 | postgres Deployment/Service builder, tests |
 | Phase 3 | reconciler create/update 및 status | 진행 예정 | controller reconcile flow, RBAC update |
 | Phase 4 | 검증 및 v0.0.3 이관 범위 정리 | 진행 예정 | phase 문서 체크, 검증 결과 |
 
@@ -61,7 +61,7 @@
 ## 8) 완료 기준
 
 - [x] appserver desired `Deployment`/`Service` helper와 단위 테스트가 있다.
-- [ ] PostgreSQL desired `Deployment`/`Service` helper와 단위 테스트가 있다.
+- [x] PostgreSQL desired `Deployment`/`Service` helper와 단위 테스트가 있다.
 - [ ] reconciler가 appserver/PostgreSQL 리소스를 create/update한다.
 - [ ] reconciler가 `OpsMateConfig` status를 최소 갱신한다.
 - [ ] RBAC에 필요한 apps/core/status 권한이 반영된다.
