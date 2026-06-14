@@ -41,15 +41,7 @@ func Deployment(config *opsmatev1alpha1.OpsMateConfig) *appsv1.Deployment {
 							Ports: []corev1.ContainerPort{
 								{Name: PortName, ContainerPort: Port},
 							},
-							Env: []corev1.EnvVar{
-								{Name: "LIGHTSPEED_API_BASE_URL", Value: config.Spec.Lightspeed.APIBaseURL},
-								{Name: "LIGHTSPEED_CREDENTIALS_SECRET", Value: config.Spec.Lightspeed.CredentialsSecretRef},
-								{Name: "LIGHTSPEED_DEFAULT_PROVIDER", Value: config.Spec.Lightspeed.DefaultProvider},
-								{Name: "LIGHTSPEED_DEFAULT_MODEL", Value: config.Spec.Lightspeed.DefaultModel},
-								{Name: "POSTGRES_SERVICE_HOST", Value: fmt.Sprintf("%s-postgres", config.Name)},
-								{Name: "TLS_CERT_FILE", Value: TLSMountPath + "/tls.crt"},
-								{Name: "TLS_KEY_FILE", Value: TLSMountPath + "/tls.key"},
-							},
+							Env: appserverEnv(config),
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "serving-cert",
@@ -83,6 +75,52 @@ func Deployment(config *opsmatev1alpha1.OpsMateConfig) *appsv1.Deployment {
 			},
 		},
 	}
+}
+
+func appserverEnv(config *opsmatev1alpha1.OpsMateConfig) []corev1.EnvVar {
+	env := []corev1.EnvVar{
+		{Name: "LIGHTSPEED_API_BASE_URL", Value: config.Spec.Lightspeed.APIBaseURL},
+		{Name: "LIGHTSPEED_CREDENTIALS_SECRET", Value: config.Spec.Lightspeed.CredentialsSecretRef},
+		{Name: "LIGHTSPEED_DEFAULT_PROVIDER", Value: config.Spec.Lightspeed.DefaultProvider},
+		{Name: "LIGHTSPEED_DEFAULT_MODEL", Value: config.Spec.Lightspeed.DefaultModel},
+		{Name: "CYOPS_EMBEDDING_ENDPOINT", Value: config.Spec.Embedding.EndpointURL},
+		{Name: "CYOPS_EMBEDDING_MODEL", Value: config.Spec.Embedding.Model},
+		{Name: "CYOPS_EMBEDDING_DIMENSIONS", Value: embeddingDimensions(config)},
+		{Name: "CYOPS_PGVECTOR_REQUIRED", Value: embeddingPGVectorRequired(config)},
+		{Name: "POSTGRES_SERVICE_HOST", Value: fmt.Sprintf("%s-postgres", config.Name)},
+		{Name: "TLS_CERT_FILE", Value: TLSMountPath + "/tls.crt"},
+		{Name: "TLS_KEY_FILE", Value: TLSMountPath + "/tls.key"},
+	}
+	if config.Spec.Embedding.CredentialsSecretRef != "" {
+		key := config.Spec.Embedding.CredentialsSecretKey
+		if key == "" {
+			key = "token"
+		}
+		env = append(env, corev1.EnvVar{
+			Name: "CYOPS_EMBEDDING_TOKEN",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: config.Spec.Embedding.CredentialsSecretRef},
+					Key:                  key,
+				},
+			},
+		})
+	}
+	return env
+}
+
+func embeddingDimensions(config *opsmatev1alpha1.OpsMateConfig) string {
+	if config.Spec.Embedding.Dimensions <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d", config.Spec.Embedding.Dimensions)
+}
+
+func embeddingPGVectorRequired(config *opsmatev1alpha1.OpsMateConfig) string {
+	if config.Spec.Embedding.RequirePGVector {
+		return "true"
+	}
+	return "false"
 }
 
 func Service(config *opsmatev1alpha1.OpsMateConfig) *corev1.Service {

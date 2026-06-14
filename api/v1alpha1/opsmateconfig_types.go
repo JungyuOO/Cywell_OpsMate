@@ -7,6 +7,7 @@ type OpsMateConfigSpec struct {
 	Lightspeed LightspeedSpec `json:"lightspeed"`
 	AIOps      AIOpsSpec      `json:"aiops,omitempty"`
 	RAG        []RAGSpec      `json:"rag,omitempty"`
+	Embedding  EmbeddingSpec  `json:"embedding,omitempty"`
 	Database   DatabaseSpec   `json:"database,omitempty"`
 	Console    ConsoleSpec    `json:"console,omitempty"`
 }
@@ -26,6 +27,15 @@ type RAGSpec struct {
 	Image     string `json:"image,omitempty"`
 	IndexPath string `json:"indexPath,omitempty"`
 	IndexID   string `json:"indexID,omitempty"`
+}
+
+type EmbeddingSpec struct {
+	EndpointURL          string `json:"endpointURL,omitempty"`
+	Model                string `json:"model,omitempty"`
+	Dimensions           int    `json:"dimensions,omitempty"`
+	CredentialsSecretRef string `json:"credentialsSecretRef,omitempty"`
+	CredentialsSecretKey string `json:"credentialsSecretKey,omitempty"`
+	RequirePGVector      bool   `json:"requirePGVector,omitempty"`
 }
 
 type DatabaseSpec struct {

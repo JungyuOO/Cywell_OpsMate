@@ -12,3 +12,17 @@ func CheckPGVectorReady(ctx context.Context, db *sql.DB) error {
 	}
 	return nil
 }
+
+func PGVectorEmbeddingMigrationSQL(dimensions int) (string, error) {
+	if dimensions <= 0 {
+		return "", fmt.Errorf("embedding dimensions must be positive")
+	}
+	if dimensions > 16384 {
+		return "", fmt.Errorf("embedding dimensions exceed supported maximum")
+	}
+	return fmt.Sprintf(`CREATE EXTENSION IF NOT EXISTS vector;
+ALTER TABLE cyops_document_embeddings
+    ALTER COLUMN embedding DROP DEFAULT,
+    ALTER COLUMN embedding TYPE VECTOR(%d)
+    USING NULL::VECTOR(%d);`, dimensions, dimensions), nil
+}

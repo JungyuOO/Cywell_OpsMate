@@ -44,6 +44,9 @@ func TestHTTPEmbeddingProviderPostsChunks(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Fatalf("method = %s, want POST", r.Method)
 		}
+		if got := r.Header.Get("Authorization"); got != "Bearer secret-token" {
+			t.Fatalf("authorization = %q", got)
+		}
 		var request struct {
 			Model      string `json:"model"`
 			Dimensions int    `json:"dimensions"`
@@ -79,6 +82,7 @@ func TestHTTPEmbeddingProviderPostsChunks(t *testing.T) {
 		EndpointURL: server.URL,
 		Model:       "embedding-model",
 		Dimensions:  4,
+		Token:       "secret-token",
 	}.Embed(context.Background(), []DocumentChunk{{
 		ID:   "chunk-001",
 		Text: "check pod status",

@@ -25,6 +25,11 @@ func TestDeploymentBuildsAppserverShape(t *testing.T) {
 	}
 	assertEnv(t, container.Env, "LIGHTSPEED_API_BASE_URL", "https://lightspeed.example.com")
 	assertEnv(t, container.Env, "LIGHTSPEED_CREDENTIALS_SECRET", "lightspeed-secret")
+	assertEnv(t, container.Env, "CYOPS_EMBEDDING_ENDPOINT", "https://embedding.opsmate.svc/embed")
+	assertEnv(t, container.Env, "CYOPS_EMBEDDING_MODEL", "nomic-embed-text")
+	assertEnv(t, container.Env, "CYOPS_EMBEDDING_DIMENSIONS", "768")
+	assertEnv(t, container.Env, "CYOPS_PGVECTOR_REQUIRED", "true")
+	assertSecretEnv(t, container.Env, "CYOPS_EMBEDDING_TOKEN", "embedding-secret", "api-token")
 	assertEnv(t, container.Env, "POSTGRES_SERVICE_HOST", "sample-postgres")
 	assertEnv(t, container.Env, "TLS_CERT_FILE", TLSMountPath+"/tls.crt")
 	assertEnv(t, container.Env, "TLS_KEY_FILE", TLSMountPath+"/tls.key")
@@ -74,6 +79,14 @@ func sampleConfig() *opsmatev1alpha1.OpsMateConfig {
 				DefaultProvider:      "openai",
 				DefaultModel:         "gpt-4.1",
 			},
+			Embedding: opsmatev1alpha1.EmbeddingSpec{
+				EndpointURL:          "https://embedding.opsmate.svc/embed",
+				Model:                "nomic-embed-text",
+				Dimensions:           768,
+				CredentialsSecretRef: "embedding-secret",
+				CredentialsSecretKey: "api-token",
+				RequirePGVector:      true,
+			},
 		},
 	}
 }
@@ -87,6 +100,26 @@ func assertEnv(t *testing.T, env []corev1.EnvVar, name string, want string) {
 			}
 			return
 		}
+	}
+	t.Fatalf("missing env %s", name)
+}
+
+func assertSecretEnv(t *testing.T, env []corev1.EnvVar, name string, secretName string, key string) {
+	t.Helper()
+	for _, item := range env {
+		if item.Name != name {
+			continue
+		}
+		if item.ValueFrom == nil || item.ValueFrom.SecretKeyRef == nil {
+			t.Fatalf("%s does not use SecretKeyRef", name)
+		}
+		if item.ValueFrom.SecretKeyRef.Name != secretName {
+			t.Fatalf("%s secret = %q, want %q", name, item.ValueFrom.SecretKeyRef.Name, secretName)
+		}
+		if item.ValueFrom.SecretKeyRef.Key != key {
+			t.Fatalf("%s key = %q, want %q", name, item.ValueFrom.SecretKeyRef.Key, key)
+		}
+		return
 	}
 	t.Fatalf("missing env %s", name)
 }
