@@ -140,3 +140,87 @@ func TestPostgresStorageUploadIntegration(t *testing.T) {
 		t.Fatalf("size = %d, want uploaded content size", sizeBytes)
 	}
 }
+
+func TestPostgresIngestionIntegration(t *testing.T) {
+	dsn := os.Getenv("CYOPS_POSTGRES_TEST_DSN")
+	if dsn == "" {
+		t.Skip("CYOPS_POSTGRES_TEST_DSN is not set")
+	}
+
+	ctx := context.Background()
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	if err := db.PingContext(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := ApplyMigrations(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(ctx, "TRUNCATE cyops_chat_messages, cyops_chat_sessions, cyops_document_embeddings, cyops_document_chunks, cyops_documents"); err != nil {
+		t.Fatal(err)
+	}
+
+	basePath := t.TempDir()
+	stored, err := LocalDocumentStorage{BasePath: basePath}.Store(ctx, "00000000-0000-4000-8000-000000000001", "runbook.md", strings.NewReader("# Runbook\n\nCheck pod status before restart."))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	repository := NewPostgresDocumentRepository(db, "opsmate")
+	repository.newID = fixedIDs(
+		"00000000-0000-4000-8000-000000000001",
+		"00000000-0000-4000-8000-000000000002",
+		"00000000-0000-4000-8000-000000000003",
+		"00000000-0000-4000-8000-000000000004",
+	)
+	document, err := repository.CreateStored(ctx, CreateStoredDocumentInput{
+		Filename:   "runbook.md",
+		SizeBytes:  stored.SizeBytes,
+		ObjectURI:  stored.URI,
+		UploadedBy: "admin",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ingested, err := IngestionService{
+		Repository: repository,
+		Chunker:    FixedRuneChunker{MaxRunes: 20},
+	}.IngestDocument(ctx, document.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ingested.Status != "ready" {
+		t.Fatalf("status = %q, want ready", ingested.Status)
+	}
+	if ingested.ChunkCount != 3 {
+		t.Fatalf("chunk count = %d, want 3", ingested.ChunkCount)
+	}
+
+	chunks, err := repository.ListChunksContext(ctx, document.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(chunks) != 3 {
+		t.Fatalf("chunks len = %d, want 3", len(chunks))
+	}
+	if chunks[0].Text != "# Runbook\n\nCheck pod" {
+		t.Fatalf("chunk text = %q", chunks[0].Text)
+	}
+}
+
+func fixedIDs(ids ...string) func() (string, error) {
+	index := 0
+	return func() (string, error) {
+		if index >= len(ids) {
+			return ids[len(ids)-1], nil
+		}
+		id := ids[index]
+		index++
+		return id, nil
+	}
+}

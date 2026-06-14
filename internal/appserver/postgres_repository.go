@@ -57,10 +57,11 @@ func (r *PostgresDocumentRepository) MarkDeleting(id string) (Document, bool) {
 
 func (r *PostgresDocumentRepository) ListContext(ctx context.Context) ([]Document, error) {
 	rows, err := r.db.QueryContext(ctx, `
-SELECT id, filename, status, size_bytes, object_uri, embedding_status, uploaded_by, created_at, last_error
-FROM cyops_documents
-WHERE namespace = $1 AND deleted_at IS NULL
-ORDER BY created_at, id`, r.namespace)
+SELECT d.id, d.filename, d.status, d.size_bytes, d.object_uri, d.embedding_status, d.uploaded_by, d.created_at, d.last_error,
+	(SELECT COUNT(*) FROM cyops_document_chunks c WHERE c.document_id = d.id) AS chunk_count
+FROM cyops_documents d
+WHERE d.namespace = $1 AND d.deleted_at IS NULL
+ORDER BY d.created_at, d.id`, r.namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -128,9 +129,10 @@ INSERT INTO cyops_documents (
 
 func (r *PostgresDocumentRepository) GetContext(ctx context.Context, id string) (Document, error) {
 	row := r.db.QueryRowContext(ctx, `
-SELECT id, filename, status, size_bytes, object_uri, embedding_status, uploaded_by, created_at, last_error
-FROM cyops_documents
-WHERE id = $1 AND namespace = $2 AND deleted_at IS NULL`, id, r.namespace)
+SELECT d.id, d.filename, d.status, d.size_bytes, d.object_uri, d.embedding_status, d.uploaded_by, d.created_at, d.last_error,
+	(SELECT COUNT(*) FROM cyops_document_chunks c WHERE c.document_id = d.id) AS chunk_count
+FROM cyops_documents d
+WHERE d.id = $1 AND d.namespace = $2 AND d.deleted_at IS NULL`, id, r.namespace)
 	return scanDocument(row)
 }
 
@@ -139,12 +141,122 @@ func (r *PostgresDocumentRepository) MarkDeletingContext(ctx context.Context, id
 UPDATE cyops_documents
 SET status = 'deleting', updated_at = $3
 WHERE id = $1 AND namespace = $2 AND deleted_at IS NULL
-RETURNING id, filename, status, size_bytes, object_uri, embedding_status, uploaded_by, created_at, last_error`,
+RETURNING id, filename, status, size_bytes, object_uri, embedding_status, uploaded_by, created_at, last_error, 0`,
 		id,
 		r.namespace,
 		r.now().UTC(),
 	)
 	return scanDocument(row)
+}
+
+func (r *PostgresDocumentRepository) BeginIngestion(ctx context.Context, id string) (Document, error) {
+	row := r.db.QueryRowContext(ctx, `
+UPDATE cyops_documents
+SET status = 'processing', embedding_status = 'pending', last_error = '', updated_at = $3
+WHERE id = $1 AND namespace = $2 AND deleted_at IS NULL
+RETURNING id, filename, status, size_bytes, object_uri, embedding_status, uploaded_by, created_at, last_error,
+	(SELECT COUNT(*) FROM cyops_document_chunks c WHERE c.document_id = cyops_documents.id)`,
+		id,
+		r.namespace,
+		r.now().UTC(),
+	)
+	return scanDocument(row)
+}
+
+func (r *PostgresDocumentRepository) CompleteIngestion(ctx context.Context, id string) (Document, error) {
+	row := r.db.QueryRowContext(ctx, `
+UPDATE cyops_documents
+SET status = 'ready', embedding_status = 'pending', last_error = '', updated_at = $3
+WHERE id = $1 AND namespace = $2 AND deleted_at IS NULL
+RETURNING id, filename, status, size_bytes, object_uri, embedding_status, uploaded_by, created_at, last_error,
+	(SELECT COUNT(*) FROM cyops_document_chunks c WHERE c.document_id = cyops_documents.id)`,
+		id,
+		r.namespace,
+		r.now().UTC(),
+	)
+	return scanDocument(row)
+}
+
+func (r *PostgresDocumentRepository) FailIngestion(ctx context.Context, id string, message string) (Document, error) {
+	row := r.db.QueryRowContext(ctx, `
+UPDATE cyops_documents
+SET status = 'failed', embedding_status = 'failed', last_error = $3, updated_at = $4
+WHERE id = $1 AND namespace = $2 AND deleted_at IS NULL
+RETURNING id, filename, status, size_bytes, object_uri, embedding_status, uploaded_by, created_at, last_error,
+	(SELECT COUNT(*) FROM cyops_document_chunks c WHERE c.document_id = cyops_documents.id)`,
+		id,
+		r.namespace,
+		message,
+		r.now().UTC(),
+	)
+	return scanDocument(row)
+}
+
+func (r *PostgresDocumentRepository) ReplaceChunks(ctx context.Context, documentID string, chunks []DocumentChunk) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, "DELETE FROM cyops_document_chunks WHERE document_id = $1", documentID); err != nil {
+		return err
+	}
+	for index, chunk := range chunks {
+		chunkID := chunk.ID
+		if chunkID == "" {
+			generatedID, err := r.newID()
+			if err != nil {
+				return err
+			}
+			chunkID = generatedID
+		}
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO cyops_document_chunks (
+	id, document_id, chunk_index, text, token_count, source_start, source_end
+) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+			chunkID,
+			documentID,
+			index,
+			chunk.Text,
+			chunk.TokenCount,
+			chunk.SourceStart,
+			chunk.SourceEnd,
+		); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (r *PostgresDocumentRepository) ListChunksContext(ctx context.Context, documentID string) ([]DocumentChunk, error) {
+	rows, err := r.db.QueryContext(ctx, `
+SELECT id, document_id, chunk_index, text, token_count, source_start, source_end
+FROM cyops_document_chunks
+WHERE document_id = $1
+ORDER BY chunk_index`, documentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var chunks []DocumentChunk
+	for rows.Next() {
+		var chunk DocumentChunk
+		if err := rows.Scan(
+			&chunk.ID,
+			&chunk.DocumentID,
+			&chunk.ChunkIndex,
+			&chunk.Text,
+			&chunk.TokenCount,
+			&chunk.SourceStart,
+			&chunk.SourceEnd,
+		); err != nil {
+			return nil, err
+		}
+		chunks = append(chunks, chunk)
+	}
+	return chunks, rows.Err()
 }
 
 type documentScanner interface {
@@ -163,6 +275,7 @@ func scanDocument(scanner documentScanner) (Document, error) {
 		&document.UploadedBy,
 		&document.CreatedAt,
 		&document.LastError,
+		&document.ChunkCount,
 	)
 	return document, err
 }
