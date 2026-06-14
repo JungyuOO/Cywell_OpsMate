@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 )
 
@@ -24,12 +25,25 @@ func (s LocalDocumentStorage) Store(ctx context.Context, documentID string, file
 	if s.BasePath == "" {
 		return StoredObject{}, fmt.Errorf("base path is required")
 	}
-	size, err := io.Copy(io.Discard, reader)
+
+	targetDir := filepath.Join(s.BasePath, documentID)
+	if err := os.MkdirAll(targetDir, 0o700); err != nil {
+		return StoredObject{}, err
+	}
+
+	targetPath := filepath.Join(targetDir, filepath.Base(filename))
+	file, err := os.OpenFile(targetPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+	if err != nil {
+		return StoredObject{}, err
+	}
+	defer file.Close()
+
+	size, err := io.Copy(file, reader)
 	if err != nil {
 		return StoredObject{}, err
 	}
 	return StoredObject{
-		URI:       filepath.ToSlash(filepath.Join(s.BasePath, documentID, filepath.Base(filename))),
+		URI:       filepath.ToSlash(targetPath),
 		SizeBytes: size,
 	}, nil
 }
