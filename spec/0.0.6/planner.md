@@ -27,8 +27,8 @@
 
 | Phase | 제목 | 상태 | 주요 산출물 |
 | --- | --- | --- | --- |
-| Phase 1 | PostgreSQL document repository | 진행 예정 | repository implementation, tests |
-| Phase 2 | Docker PostgreSQL integration verification | 진행 예정 | docker-based test evidence |
+| Phase 1 | PostgreSQL document repository | 완료 | repository implementation, tests |
+| Phase 2 | Docker PostgreSQL integration verification | 완료 | docker-based test evidence |
 | Phase 3 | storage/provider wiring refinements | 진행 예정 | appserver dependency wiring notes |
 | Phase 4 | v0.0.7 ingestion handoff | 진행 예정 | ingestion/embedding implementation scope |
 
@@ -54,8 +54,8 @@
 
 ## 8) 완료 기준
 
-- [ ] PostgreSQL document repository가 구현된다.
-- [ ] repository unit/integration test가 있다.
-- [ ] Docker PostgreSQL에서 migration과 repository 동작이 검증된다.
+- [x] PostgreSQL document repository가 구현된다.
+- [x] repository unit/integration test가 있다.
+- [x] Docker PostgreSQL에서 migration과 repository 동작이 검증된다.
 - [ ] `go fmt`, `go test`, `go build`가 성공한다.
 - [ ] v0.0.7 ingestion/embedding 범위가 정리된다.
