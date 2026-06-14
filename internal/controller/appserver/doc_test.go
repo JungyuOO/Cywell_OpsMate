@@ -29,6 +29,8 @@ func TestDeploymentBuildsAppserverShape(t *testing.T) {
 	assertEnv(t, container.Env, "CYOPS_EMBEDDING_MODEL", "nomic-embed-text")
 	assertEnv(t, container.Env, "CYOPS_EMBEDDING_DIMENSIONS", "768")
 	assertEnv(t, container.Env, "CYOPS_PGVECTOR_REQUIRED", "true")
+	assertEnv(t, container.Env, "CYOPS_RETRIEVAL_MODE", "pgvector")
+	assertEnv(t, container.Env, "CYOPS_RETRIEVAL_SLOW_THRESHOLD_MS", "250")
 	assertSecretEnv(t, container.Env, "CYOPS_EMBEDDING_TOKEN", "embedding-secret", "api-token")
 	assertEnv(t, container.Env, "POSTGRES_SERVICE_HOST", "sample-postgres")
 	assertEnv(t, container.Env, "TLS_CERT_FILE", TLSMountPath+"/tls.crt")
@@ -86,6 +88,8 @@ func sampleConfig() *opsmatev1alpha1.OpsMateConfig {
 				CredentialsSecretRef: "embedding-secret",
 				CredentialsSecretKey: "api-token",
 				RequirePGVector:      true,
+				RetrievalMode:        "pgvector",
+				RetrievalSlowMillis:  250,
 			},
 		},
 	}

@@ -87,6 +87,8 @@ func appserverEnv(config *opsmatev1alpha1.OpsMateConfig) []corev1.EnvVar {
 		{Name: "CYOPS_EMBEDDING_MODEL", Value: config.Spec.Embedding.Model},
 		{Name: "CYOPS_EMBEDDING_DIMENSIONS", Value: embeddingDimensions(config)},
 		{Name: "CYOPS_PGVECTOR_REQUIRED", Value: embeddingPGVectorRequired(config)},
+		{Name: "CYOPS_RETRIEVAL_MODE", Value: embeddingRetrievalMode(config)},
+		{Name: "CYOPS_RETRIEVAL_SLOW_THRESHOLD_MS", Value: embeddingRetrievalSlowMillis(config)},
 		{Name: "POSTGRES_SERVICE_HOST", Value: fmt.Sprintf("%s-postgres", config.Name)},
 		{Name: "TLS_CERT_FILE", Value: TLSMountPath + "/tls.crt"},
 		{Name: "TLS_KEY_FILE", Value: TLSMountPath + "/tls.key"},
@@ -121,6 +123,20 @@ func embeddingPGVectorRequired(config *opsmatev1alpha1.OpsMateConfig) string {
 		return "true"
 	}
 	return "false"
+}
+
+func embeddingRetrievalMode(config *opsmatev1alpha1.OpsMateConfig) string {
+	if config.Spec.Embedding.RetrievalMode == "" {
+		return "bytea"
+	}
+	return config.Spec.Embedding.RetrievalMode
+}
+
+func embeddingRetrievalSlowMillis(config *opsmatev1alpha1.OpsMateConfig) string {
+	if config.Spec.Embedding.RetrievalSlowMillis <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d", config.Spec.Embedding.RetrievalSlowMillis)
 }
 
 func Service(config *opsmatev1alpha1.OpsMateConfig) *corev1.Service {
