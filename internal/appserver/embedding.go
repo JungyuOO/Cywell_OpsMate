@@ -31,6 +31,7 @@ type HTTPEmbeddingProvider struct {
 	EndpointURL string
 	Model       string
 	Dimensions  int
+	Token       string
 	Client      HTTPDoer
 }
 
@@ -52,6 +53,9 @@ func (p HTTPEmbeddingProvider) Embed(ctx context.Context, chunks []DocumentChunk
 		return nil, err
 	}
 	request.Header.Set("Content-Type", "application/json")
+	if p.Token != "" {
+		request.Header.Set("Authorization", "Bearer "+p.Token)
+	}
 
 	client := p.Client
 	if client == nil {

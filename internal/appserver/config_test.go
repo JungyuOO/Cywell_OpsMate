@@ -13,6 +13,7 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	t.Setenv(envEmbeddingEndpoint, "https://embedding.example/embed")
 	t.Setenv(envEmbeddingModel, "embedding-model")
 	t.Setenv(envEmbeddingDimensions, "8")
+	t.Setenv(envEmbeddingToken, "secret-token")
 	t.Setenv(envPGVectorRequired, "true")
 
 	config := LoadConfigFromEnv()
@@ -37,6 +38,9 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	}
 	if config.EmbeddingDimensions != 8 {
 		t.Fatalf("embedding dimensions = %d, want 8", config.EmbeddingDimensions)
+	}
+	if config.EmbeddingToken != "secret-token" {
+		t.Fatalf("embedding token = %q", config.EmbeddingToken)
 	}
 	if !config.PGVectorRequired {
 		t.Fatal("pgvector required = false, want true")

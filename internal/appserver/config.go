@@ -18,6 +18,7 @@ const (
 	envEmbeddingEndpoint   = "CYOPS_EMBEDDING_ENDPOINT"
 	envEmbeddingModel      = "CYOPS_EMBEDDING_MODEL"
 	envEmbeddingDimensions = "CYOPS_EMBEDDING_DIMENSIONS"
+	envEmbeddingToken      = "CYOPS_EMBEDDING_TOKEN"
 	envPGVectorRequired    = "CYOPS_PGVECTOR_REQUIRED"
 )
 
@@ -29,6 +30,7 @@ type AppConfig struct {
 	EmbeddingEndpoint   string
 	EmbeddingModel      string
 	EmbeddingDimensions int
+	EmbeddingToken      string
 	PGVectorRequired    bool
 }
 
@@ -46,6 +48,7 @@ func LoadConfigFromEnv() AppConfig {
 		EmbeddingEndpoint:   strings.TrimSpace(os.Getenv(envEmbeddingEndpoint)),
 		EmbeddingModel:      strings.TrimSpace(os.Getenv(envEmbeddingModel)),
 		EmbeddingDimensions: dimensions,
+		EmbeddingToken:      strings.TrimSpace(os.Getenv(envEmbeddingToken)),
 		PGVectorRequired:    parseBool(os.Getenv(envPGVectorRequired)),
 	}
 }
@@ -106,6 +109,7 @@ func NewEmbeddingProviderFromConfig(config AppConfig) EmbeddingProvider {
 		EndpointURL: config.EmbeddingEndpoint,
 		Model:       config.EmbeddingModel,
 		Dimensions:  config.EmbeddingDimensions,
+		Token:       config.EmbeddingToken,
 	}
 }
 
