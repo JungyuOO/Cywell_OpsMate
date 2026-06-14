@@ -32,6 +32,8 @@ type Citation struct {
 	DocumentID string `json:"documentId"`
 	Title      string `json:"title"`
 	ChunkID    string `json:"chunkId"`
+	Rank       int    `json:"rank,omitempty"`
+	Score      string `json:"score,omitempty"`
 }
 
 type Document struct {

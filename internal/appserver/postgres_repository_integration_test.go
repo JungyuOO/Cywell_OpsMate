@@ -3,6 +3,7 @@ package appserver
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -286,6 +287,125 @@ func TestPostgresEmbeddingIntegration(t *testing.T) {
 	if vectors[0].Dimensions != 8 || len(vectors[0].Embedding) != 8 {
 		t.Fatalf("vector = %+v, want 8 dimensions and 8 bytes", vectors[0])
 	}
+}
+
+func TestPGVectorReadinessReportsMissingExtension(t *testing.T) {
+	dsn := os.Getenv("CYOPS_POSTGRES_TEST_DSN")
+	if dsn == "" {
+		t.Skip("CYOPS_POSTGRES_TEST_DSN is not set")
+	}
+
+	ctx := context.Background()
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	err = CheckPGVectorReady(ctx, db)
+	if err != nil && !strings.Contains(err.Error(), "pgvector extension is not ready") {
+		t.Fatalf("error = %v, want pgvector readiness message", err)
+	}
+}
+
+func TestPostgresRetrieverRanksEmbeddedChunks(t *testing.T) {
+	dsn := os.Getenv("CYOPS_POSTGRES_TEST_DSN")
+	if dsn == "" {
+		t.Skip("CYOPS_POSTGRES_TEST_DSN is not set")
+	}
+
+	ctx := context.Background()
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	if err := db.PingContext(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := ApplyMigrations(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(ctx, "TRUNCATE cyops_chat_messages, cyops_chat_sessions, cyops_document_embeddings, cyops_document_chunks, cyops_documents"); err != nil {
+		t.Fatal(err)
+	}
+
+	repository := NewPostgresDocumentRepository(db, "opsmate")
+	repository.newID = fixedIDs(
+		"00000000-0000-4000-8000-000000000021",
+		"00000000-0000-4000-8000-000000000022",
+		"00000000-0000-4000-8000-000000000023",
+	)
+	document, err := repository.CreateStored(ctx, CreateStoredDocumentInput{
+		Filename:   "runbook.md",
+		SizeBytes:  30,
+		ObjectURI:  "/tmp/runbook.md",
+		UploadedBy: "admin",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.ReplaceChunks(ctx, document.ID, []DocumentChunk{
+		{Text: "restart deployment", TokenCount: 2},
+		{Text: "check pod status", TokenCount: 3},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repository.CompleteIngestion(ctx, document.ID); err != nil {
+		t.Fatal(err)
+	}
+	chunks, err := repository.ListChunksContext(ctx, document.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.ReplaceEmbeddings(ctx, []EmbeddingVector{
+		{ChunkID: chunks[0].ID, Model: "test", Dimensions: 2, Embedding: []byte{0, 10}},
+		{ChunkID: chunks[1].ID, Model: "test", Dimensions: 2, Embedding: []byte{10, 0}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repository.CompleteEmbedding(ctx, document.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := PostgresRetriever{
+		Repository: repository,
+		Embedder: staticEmbeddingProvider{
+			vectors: []EmbeddingVector{{ChunkID: "query", Model: "test", Dimensions: 2, Embedding: []byte{10, 0}}},
+		},
+	}.Retrieve(ctx, RetrievalRequest{
+		Message:     "pod status",
+		DocumentIDs: []string{document.ID},
+		Limit:       1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Citations) != 1 {
+		t.Fatalf("citations len = %d, want 1", len(result.Citations))
+	}
+	if result.Citations[0].ChunkID != chunks[1].ID {
+		t.Fatalf("chunk id = %q, want %q", result.Citations[0].ChunkID, chunks[1].ID)
+	}
+	if result.Citations[0].Rank != 1 || result.Citations[0].Score != "1.0000" {
+		t.Fatalf("citation = %+v", result.Citations[0])
+	}
+}
+
+type staticEmbeddingProvider struct {
+	vectors []EmbeddingVector
+	err     error
+}
+
+func (p staticEmbeddingProvider) Embed(context.Context, []DocumentChunk) ([]EmbeddingVector, error) {
+	if p.err != nil {
+		return nil, p.err
+	}
+	if len(p.vectors) == 0 {
+		return nil, errors.New("no vectors")
+	}
+	return p.vectors, nil
 }
 
 func fixedIDs(ids ...string) func() (string, error) {

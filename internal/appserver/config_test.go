@@ -10,6 +10,10 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	t.Setenv(envNamespace, "opsmate")
 	t.Setenv(envDocumentStoragePath, "/var/lib/cyops/documents")
 	t.Setenv(envLightspeedEndpoint, "https://lightspeed.example/api/chat")
+	t.Setenv(envEmbeddingEndpoint, "https://embedding.example/embed")
+	t.Setenv(envEmbeddingModel, "embedding-model")
+	t.Setenv(envEmbeddingDimensions, "8")
+	t.Setenv(envPGVectorRequired, "true")
 
 	config := LoadConfigFromEnv()
 
@@ -24,6 +28,18 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	}
 	if config.LightspeedEndpoint != "https://lightspeed.example/api/chat" {
 		t.Fatalf("lightspeed endpoint = %q", config.LightspeedEndpoint)
+	}
+	if config.EmbeddingEndpoint != "https://embedding.example/embed" {
+		t.Fatalf("embedding endpoint = %q", config.EmbeddingEndpoint)
+	}
+	if config.EmbeddingModel != "embedding-model" {
+		t.Fatalf("embedding model = %q", config.EmbeddingModel)
+	}
+	if config.EmbeddingDimensions != 8 {
+		t.Fatalf("embedding dimensions = %d, want 8", config.EmbeddingDimensions)
+	}
+	if !config.PGVectorRequired {
+		t.Fatal("pgvector required = false, want true")
 	}
 }
 
