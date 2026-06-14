@@ -2,15 +2,15 @@
 
 ## 작업 내용
 
-- [ ] `/api/chat` DTO와 handler를 추가한다.
-- [ ] `/api/documents` list/upload handler를 추가한다.
-- [ ] `/api/documents/{documentId}` detail/delete handler를 추가한다.
-- [ ] mocked provider와 in-memory document repository로 handler tests를 고정한다.
+- [x] `/api/chat` DTO와 handler를 추가한다.
+- [x] `/api/documents` list/upload handler를 추가한다.
+- [x] `/api/documents/{documentId}` detail/delete handler를 추가한다.
+- [x] mocked provider와 in-memory document repository로 handler tests를 고정한다.
 
 ## 검증
 
-- [ ] `go test ./internal/appserver`
-- [ ] `go test ./...`
+- [x] `go test ./internal/appserver`
+- [x] `go test ./...`
 
 ## 남은 범위
 
