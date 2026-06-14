@@ -1,0 +1,19 @@
+apiVersion: opsmate.cywell.io/v1alpha1
+kind: OpsMateConfig
+metadata:
+  name: sample
+spec:
+  lightspeed:
+    apiBaseURL: https://lightspeed-api.example.com
+    credentialsSecretRef: lightspeed-api-credentials
+    defaultProvider: openai
+    defaultModel: gpt-4.1
+  database:
+    type: postgres
+    sharedBuffers: 128MB
+    maxConnections: 100
+  console:
+    enabled: true
+    displayName: Cywell OpsMate
+  aiops:
+    enabled: false

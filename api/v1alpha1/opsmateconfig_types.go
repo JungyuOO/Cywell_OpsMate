@@ -1,5 +1,7 @@
 package v1alpha1
 
+import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 // OpsMateConfigSpec defines the desired state for the Cywell OpsMate Operator.
 type OpsMateConfigSpec struct {
 	Lightspeed LightspeedSpec `json:"lightspeed"`
@@ -38,11 +40,24 @@ type ConsoleSpec struct {
 }
 
 type OpsMateConfigStatus struct {
-	OverallStatus string   `json:"overallStatus,omitempty"`
-	Conditions    []string `json:"conditions,omitempty"`
+	OverallStatus string             `json:"overallStatus,omitempty"`
+	Conditions    []metav1.Condition `json:"conditions,omitempty"`
 }
 
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 type OpsMateConfig struct {
-	Spec   OpsMateConfigSpec   `json:"spec"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   OpsMateConfigSpec   `json:"spec,omitempty"`
 	Status OpsMateConfigStatus `json:"status,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+type OpsMateConfigList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+
+	Items []OpsMateConfig `json:"items"`
 }

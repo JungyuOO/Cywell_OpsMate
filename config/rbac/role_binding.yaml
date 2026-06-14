@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cywell-opsmate-manager-rolebinding
+  namespace: cywell-opsmate-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cywell-opsmate-manager-role
+subjects:
+- kind: ServiceAccount
+  name: cywell-opsmate-controller-manager
+  namespace: cywell-opsmate-system
