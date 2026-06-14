@@ -11,9 +11,11 @@ import (
 )
 
 const (
-	DefaultImage = "ghcr.io/jungyuoo/cywell-opsmate-appserver:latest"
-	PortName     = "http"
-	Port         = int32(8080)
+	DefaultImage          = "ghcr.io/jungyuoo/cywell-opsmate-appserver:latest"
+	PortName              = "https"
+	Port                  = int32(8443)
+	ServiceCertAnnotation = "service.beta.openshift.io/serving-cert-secret-name"
+	TLSMountPath          = "/var/run/secrets/cywell-opsmate/tls"
 )
 
 func Deployment(config *opsmatev1alpha1.OpsMateConfig) *appsv1.Deployment {
@@ -45,6 +47,15 @@ func Deployment(config *opsmatev1alpha1.OpsMateConfig) *appsv1.Deployment {
 								{Name: "LIGHTSPEED_DEFAULT_PROVIDER", Value: config.Spec.Lightspeed.DefaultProvider},
 								{Name: "LIGHTSPEED_DEFAULT_MODEL", Value: config.Spec.Lightspeed.DefaultModel},
 								{Name: "POSTGRES_SERVICE_HOST", Value: fmt.Sprintf("%s-postgres", config.Name)},
+								{Name: "TLS_CERT_FILE", Value: TLSMountPath + "/tls.crt"},
+								{Name: "TLS_KEY_FILE", Value: TLSMountPath + "/tls.key"},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "serving-cert",
+									MountPath: TLSMountPath,
+									ReadOnly:  true,
+								},
 							},
 							SecurityContext: &corev1.SecurityContext{
 								AllowPrivilegeEscalation: ptr(false),
@@ -58,6 +69,16 @@ func Deployment(config *opsmatev1alpha1.OpsMateConfig) *appsv1.Deployment {
 					SecurityContext: &corev1.PodSecurityContext{
 						RunAsNonRoot: ptr(true),
 					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "serving-cert",
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName: TLSSecretName(config),
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -69,9 +90,10 @@ func Service(config *opsmatev1alpha1.OpsMateConfig) *corev1.Service {
 
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ResourceName(config),
-			Namespace: config.Namespace,
-			Labels:    labels,
+			Name:        ResourceName(config),
+			Namespace:   config.Namespace,
+			Labels:      labels,
+			Annotations: map[string]string{ServiceCertAnnotation: TLSSecretName(config)},
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: labels,
@@ -88,6 +110,10 @@ func Service(config *opsmatev1alpha1.OpsMateConfig) *corev1.Service {
 
 func ResourceName(config *opsmatev1alpha1.OpsMateConfig) string {
 	return fmt.Sprintf("%s-appserver", config.Name)
+}
+
+func TLSSecretName(config *opsmatev1alpha1.OpsMateConfig) string {
+	return fmt.Sprintf("%s-appserver-tls", config.Name)
 }
 
 func labelsFor(config *opsmatev1alpha1.OpsMateConfig) map[string]string {

@@ -2,14 +2,14 @@
 
 ## 작업 내용
 
-- [ ] appserver Service에 OpenShift service-ca serving cert annotation을 추가한다.
-- [ ] appserver Deployment에 serving cert Secret mount/env 경계를 추가한다.
-- [ ] 단위 테스트로 TLS Secret 이름과 mount path를 고정한다.
+- [x] appserver Service에 OpenShift service-ca serving cert annotation을 추가한다.
+- [x] appserver Deployment에 serving cert Secret mount/env 경계를 추가한다.
+- [x] 단위 테스트로 TLS Secret 이름과 mount path를 고정한다.
 
 ## 검증
 
-- [ ] `go test ./internal/controller/appserver`
-- [ ] `go test ./...`
+- [x] `go test ./internal/controller/appserver`
+- [x] `go test ./...`
 
 ## 남은 범위
 

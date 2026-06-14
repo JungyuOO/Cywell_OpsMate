@@ -30,7 +30,7 @@
 | --- | --- | --- | --- |
 | Phase 1 | ConsolePlugin desired resource helper | 완료 | console plugin builder, tests |
 | Phase 2 | ConsolePlugin reconcile 및 RBAC | 완료 | reconciler 연결, RBAC update |
-| Phase 3 | appserver TLS/service-ca 경계 | 진행 예정 | service annotation, deployment mount/env, tests |
+| Phase 3 | appserver TLS/service-ca 경계 | 완료 | service annotation, deployment mount/env, tests |
 | Phase 4 | backend HTTP skeleton 및 검증 | 진행 예정 | appserver package server skeleton, phase docs |
 
 ## 5) 마이그레이션 또는 운영 전략
@@ -61,7 +61,7 @@
 - [x] ConsolePlugin desired object helper와 단위 테스트가 있다.
 - [x] reconciler가 ConsolePlugin을 create/update한다.
 - [x] RBAC에 ConsolePlugin 권한이 반영된다.
-- [ ] appserver Service/Deployment에 TLS/service-ca 경계가 반영된다.
+- [x] appserver Service/Deployment에 TLS/service-ca 경계가 반영된다.
 - [ ] backend HTTP skeleton이 빌드된다.
 - [ ] `go fmt`, `go test`, `go build`가 성공한다.
 - [ ] `kubectl kustomize config/default`가 성공한다.
