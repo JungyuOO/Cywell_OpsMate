@@ -36,7 +36,7 @@
 | --- | --- | --- | --- |
 | Phase 1 | CYOps UX/API 아키텍처 결정 | 완료 | architecture decision, UI behavior contract |
 | Phase 2 | Backend API contract | 완료 | chat/documents/ingestion API spec |
-| Phase 3 | Data model 및 RAG pipeline contract | 진행 예정 | PostgreSQL tables, vector/index strategy |
+| Phase 3 | Data model 및 RAG pipeline contract | 완료 | PostgreSQL tables, vector/index strategy |
 | Phase 4 | v0.0.5 구현 범위 정리 | 진행 예정 | frontend/backend implementation handoff |
 
 ## 5) 마이그레이션 또는 운영 전략
@@ -72,5 +72,5 @@
 - [x] 고객 문서 upload/list/manage UI 경계가 정의된다.
 - [x] BYOKnowledge 없이 OpsMate-owned RAG pipeline을 쓰는 방향이 정의된다.
 - [x] backend API contract가 정의된다.
-- [ ] PostgreSQL/vector/embedding 데이터 경계가 정의된다.
+- [x] PostgreSQL/vector/embedding 데이터 경계가 정의된다.
 - [ ] v0.0.5 구현 우선순위가 정리된다.
