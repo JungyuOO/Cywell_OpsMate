@@ -6,6 +6,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"time"
 )
 
 type RetrievalRequest struct {
@@ -19,6 +20,24 @@ type RetrievalResult struct {
 	Citations []Citation
 }
 
+type RetrievalObservation struct {
+	Mode          string
+	Duration      time.Duration
+	Slow          bool
+	FailureReason string
+	ResultCount   int
+}
+
+type RetrievalObserver interface {
+	ObserveRetrieval(observation RetrievalObservation)
+}
+
+type retrievalCandidate struct {
+	document Document
+	chunk    DocumentChunk
+	score    float64
+}
+
 type Retriever interface {
 	Retrieve(ctx context.Context, request RetrievalRequest) (RetrievalResult, error)
 }
@@ -26,35 +45,70 @@ type Retriever interface {
 type PostgresRetriever struct {
 	Repository *PostgresDocumentRepository
 	Embedder   EmbeddingProvider
+	Mode       string
+	Observer   RetrievalObserver
+	SlowAfter  time.Duration
 }
 
 func (r PostgresRetriever) Retrieve(ctx context.Context, request RetrievalRequest) (RetrievalResult, error) {
+	start := time.Now()
+	mode := retrievalModeOrDefault(r.Mode)
+	var result RetrievalResult
+	var failureReason string
+	defer func() {
+		if r.Observer != nil {
+			duration := time.Since(start)
+			r.Observer.ObserveRetrieval(RetrievalObservation{
+				Mode:          mode,
+				Duration:      duration,
+				Slow:          r.SlowAfter > 0 && duration > r.SlowAfter,
+				FailureReason: failureReason,
+				ResultCount:   len(result.Citations),
+			})
+		}
+	}()
+
 	if r.Repository == nil {
-		return RetrievalResult{}, nil
+		return result, nil
 	}
 	limit := request.Limit
 	if limit <= 0 {
 		limit = 3
 	}
 
-	type candidate struct {
-		document Document
-		chunk    DocumentChunk
-		score    float64
-	}
-	var candidates []candidate
 	embedder := r.Embedder
 	if embedder == nil {
 		embedder = DeterministicEmbeddingProvider{}
 	}
 	queryVectors, err := embedder.Embed(ctx, []DocumentChunk{{ID: "query", Text: request.Message}})
 	if err != nil {
+		failureReason = "query_embedding_failed"
 		return RetrievalResult{}, err
 	}
 	if len(queryVectors) != 1 {
+		failureReason = "query_embedding_count_mismatch"
 		return RetrievalResult{}, fmt.Errorf("query embedding returned %d vectors, want 1", len(queryVectors))
 	}
 
+	if mode == "pgvector" {
+		result, err = r.retrievePGVector(ctx, request, queryVectors[0], limit)
+		if err != nil {
+			failureReason = "pgvector_query_failed"
+			return RetrievalResult{}, err
+		}
+		return result, nil
+	}
+
+	result, err = r.retrieveBYTEA(ctx, request, queryVectors[0], limit)
+	if err != nil {
+		failureReason = "bytea_query_failed"
+		return RetrievalResult{}, err
+	}
+	return result, nil
+}
+
+func (r PostgresRetriever) retrieveBYTEA(ctx context.Context, request RetrievalRequest, queryVector EmbeddingVector, limit int) (RetrievalResult, error) {
+	var candidates []retrievalCandidate
 	for _, documentID := range request.DocumentIDs {
 		document, err := r.Repository.GetContext(ctx, documentID)
 		if err != nil || document.Status != "ready" || document.EmbeddingStatus != "ready" {
@@ -77,10 +131,10 @@ func (r PostgresRetriever) Retrieve(ctx context.Context, request RetrievalReques
 			if !ok {
 				continue
 			}
-			candidates = append(candidates, candidate{
+			candidates = append(candidates, retrievalCandidate{
 				document: document,
 				chunk:    chunk,
-				score:    cosineBytes(queryVectors[0].Embedding, embedding.Embedding),
+				score:    cosineBytes(queryVector.Embedding, embedding.Embedding),
 			})
 		}
 	}
@@ -109,6 +163,30 @@ func (r PostgresRetriever) Retrieve(ctx context.Context, request RetrievalReques
 			ChunkID:    candidate.chunk.ID,
 			Rank:       index + 1,
 			Score:      fmt.Sprintf("%.4f", candidate.score),
+		})
+	}
+	return result, nil
+}
+
+func (r PostgresRetriever) retrievePGVector(ctx context.Context, request RetrievalRequest, queryVector EmbeddingVector, limit int) (RetrievalResult, error) {
+	rows, err := r.Repository.ListRankedChunksPGVector(ctx, request.DocumentIDs, queryVector.Embedding, limit)
+	if err != nil {
+		return RetrievalResult{}, err
+	}
+
+	var result RetrievalResult
+	for index, row := range rows {
+		result.Context = append(result.Context, ProviderContext{
+			Type:   "rag_chunk",
+			Text:   trimContextText(row.Chunk.Text),
+			Source: row.Document.ID + "/" + row.Chunk.ID,
+		})
+		result.Citations = append(result.Citations, Citation{
+			DocumentID: row.Document.ID,
+			Title:      row.Document.Filename,
+			ChunkID:    row.Chunk.ID,
+			Rank:       index + 1,
+			Score:      fmt.Sprintf("%.4f", row.Score),
 		})
 	}
 	return result, nil

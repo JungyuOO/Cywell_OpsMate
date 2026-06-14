@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -14,6 +15,12 @@ type PostgresDocumentRepository struct {
 	namespace string
 	now       func() time.Time
 	newID     func() (string, error)
+}
+
+type RankedChunk struct {
+	Document Document
+	Chunk    DocumentChunk
+	Score    float64
 }
 
 func NewPostgresDocumentRepository(db *sql.DB, namespace string) *PostgresDocumentRepository {
@@ -354,6 +361,82 @@ ORDER BY c.chunk_index`, documentID)
 		vectors = append(vectors, vector)
 	}
 	return vectors, rows.Err()
+}
+
+func (r *PostgresDocumentRepository) ListRankedChunksPGVector(ctx context.Context, documentIDs []string, queryEmbedding []byte, limit int) ([]RankedChunk, error) {
+	query, args, err := rankedChunksPGVectorSQL(r.namespace, documentIDs, bytesToVectorLiteral(queryEmbedding), limit)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ranked []RankedChunk
+	for rows.Next() {
+		var item RankedChunk
+		if err := rows.Scan(
+			&item.Document.ID,
+			&item.Document.Filename,
+			&item.Chunk.ID,
+			&item.Chunk.Text,
+			&item.Score,
+		); err != nil {
+			return nil, err
+		}
+		ranked = append(ranked, item)
+	}
+	return ranked, rows.Err()
+}
+
+func rankedChunksPGVectorSQL(namespace string, documentIDs []string, vectorLiteral string, limit int) (string, []any, error) {
+	if namespace == "" {
+		return "", nil, fmt.Errorf("namespace is required")
+	}
+	if len(documentIDs) == 0 {
+		return "", nil, fmt.Errorf("document ids are required")
+	}
+	if vectorLiteral == "" {
+		return "", nil, fmt.Errorf("query vector is required")
+	}
+	if limit <= 0 {
+		limit = 3
+	}
+
+	args := []any{namespace, vectorLiteral}
+	placeholders := make([]string, 0, len(documentIDs))
+	for _, documentID := range documentIDs {
+		args = append(args, documentID)
+		placeholders = append(placeholders, fmt.Sprintf("$%d", len(args)))
+	}
+	args = append(args, limit)
+
+	query := fmt.Sprintf(`
+SELECT d.id, d.filename, c.id, c.text, 1 - (e.embedding <=> $2::vector) AS score
+FROM cyops_document_chunks c
+JOIN cyops_documents d ON d.id = c.document_id
+JOIN cyops_document_embeddings e ON e.chunk_id = c.id
+WHERE d.namespace = $1
+  AND d.deleted_at IS NULL
+  AND d.status = 'ready'
+  AND d.embedding_status = 'ready'
+  AND d.id IN (%s)
+ORDER BY e.embedding <=> $2::vector, c.chunk_index
+LIMIT $%d`, strings.Join(placeholders, ", "), len(args))
+	return query, args, nil
+}
+
+func bytesToVectorLiteral(value []byte) string {
+	if len(value) == 0 {
+		return ""
+	}
+	parts := make([]string, len(value))
+	for i, item := range value {
+		parts[i] = fmt.Sprintf("%d", item)
+	}
+	return "[" + strings.Join(parts, ",") + "]"
 }
 
 type documentScanner interface {

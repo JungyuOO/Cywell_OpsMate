@@ -36,6 +36,8 @@ type EmbeddingSpec struct {
 	CredentialsSecretRef string `json:"credentialsSecretRef,omitempty"`
 	CredentialsSecretKey string `json:"credentialsSecretKey,omitempty"`
 	RequirePGVector      bool   `json:"requirePGVector,omitempty"`
+	RetrievalMode        string `json:"retrievalMode,omitempty"`
+	RetrievalSlowMillis  int    `json:"retrievalSlowMillis,omitempty"`
 }
 
 type DatabaseSpec struct {

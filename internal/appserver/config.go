@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -20,6 +21,8 @@ const (
 	envEmbeddingDimensions = "CYOPS_EMBEDDING_DIMENSIONS"
 	envEmbeddingToken      = "CYOPS_EMBEDDING_TOKEN"
 	envPGVectorRequired    = "CYOPS_PGVECTOR_REQUIRED"
+	envRetrievalMode       = "CYOPS_RETRIEVAL_MODE"
+	envRetrievalSlowMS     = "CYOPS_RETRIEVAL_SLOW_THRESHOLD_MS"
 )
 
 type AppConfig struct {
@@ -32,6 +35,8 @@ type AppConfig struct {
 	EmbeddingDimensions int
 	EmbeddingToken      string
 	PGVectorRequired    bool
+	RetrievalMode       string
+	RetrievalSlow       time.Duration
 }
 
 func LoadConfigFromEnv() AppConfig {
@@ -40,6 +45,7 @@ func LoadConfigFromEnv() AppConfig {
 		namespace = "default"
 	}
 	dimensions, _ := strconv.Atoi(strings.TrimSpace(os.Getenv(envEmbeddingDimensions)))
+	slowMS, _ := strconv.Atoi(strings.TrimSpace(os.Getenv(envRetrievalSlowMS)))
 	return AppConfig{
 		PostgresDSN:         strings.TrimSpace(os.Getenv(envPostgresDSN)),
 		Namespace:           namespace,
@@ -50,6 +56,8 @@ func LoadConfigFromEnv() AppConfig {
 		EmbeddingDimensions: dimensions,
 		EmbeddingToken:      strings.TrimSpace(os.Getenv(envEmbeddingToken)),
 		PGVectorRequired:    parseBool(os.Getenv(envPGVectorRequired)),
+		RetrievalMode:       retrievalModeOrDefault(os.Getenv(envRetrievalMode)),
+		RetrievalSlow:       time.Duration(slowMS) * time.Millisecond,
 	}
 }
 
@@ -80,6 +88,8 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 		retriever = PostgresRetriever{
 			Repository: repository,
 			Embedder:   NewEmbeddingProviderFromConfig(config),
+			Mode:       config.RetrievalMode,
+			SlowAfter:  config.RetrievalSlow,
 		}
 	}
 
@@ -96,6 +106,15 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 		Storage:   storage,
 		Retriever: retriever,
 	}), nil
+}
+
+func retrievalModeOrDefault(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "pgvector":
+		return "pgvector"
+	default:
+		return "bytea"
+	}
 }
 
 func NewEmbeddingProviderFromConfig(config AppConfig) EmbeddingProvider {

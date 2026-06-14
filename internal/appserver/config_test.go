@@ -3,6 +3,7 @@ package appserver
 import (
 	"context"
 	"testing"
+	"time"
 )
 
 func TestLoadConfigFromEnv(t *testing.T) {
@@ -15,6 +16,8 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	t.Setenv(envEmbeddingDimensions, "8")
 	t.Setenv(envEmbeddingToken, "secret-token")
 	t.Setenv(envPGVectorRequired, "true")
+	t.Setenv(envRetrievalMode, "pgvector")
+	t.Setenv(envRetrievalSlowMS, "250")
 
 	config := LoadConfigFromEnv()
 
@@ -44,6 +47,20 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	}
 	if !config.PGVectorRequired {
 		t.Fatal("pgvector required = false, want true")
+	}
+	if config.RetrievalMode != "pgvector" {
+		t.Fatalf("retrieval mode = %q, want pgvector", config.RetrievalMode)
+	}
+	if config.RetrievalSlow != 250*time.Millisecond {
+		t.Fatalf("retrieval slow = %s, want 250ms", config.RetrievalSlow)
+	}
+}
+
+func TestLoadConfigFromEnvDefaultsRetrievalModeToBytea(t *testing.T) {
+	config := LoadConfigFromEnv()
+
+	if config.RetrievalMode != "bytea" {
+		t.Fatalf("retrieval mode = %q, want bytea", config.RetrievalMode)
 	}
 }
 
