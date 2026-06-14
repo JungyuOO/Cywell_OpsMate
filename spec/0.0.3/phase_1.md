@@ -2,15 +2,15 @@
 
 ## 작업 내용
 
-- [ ] `internal/controller/console`에 ConsolePlugin desired object builder를 추가한다.
-- [ ] appserver Service 이름과 namespace를 ConsolePlugin backend service에 연결한다.
-- [ ] `ConsoleSpec.Enabled`가 false일 때 reconcile에서 건너뛸 수 있는 경계를 둔다.
-- [ ] desired object shape를 단위 테스트로 고정한다.
+- [x] `internal/controller/console`에 ConsolePlugin desired object builder를 추가한다.
+- [x] appserver Service 이름과 namespace를 ConsolePlugin backend service에 연결한다.
+- [x] `ConsoleSpec.Enabled`가 false일 때 reconcile에서 건너뛸 수 있는 경계를 둔다.
+- [x] desired object shape를 단위 테스트로 고정한다.
 
 ## 검증
 
-- [ ] `go test ./internal/controller/console`
-- [ ] `go test ./...`
+- [x] `go test ./internal/controller/console`
+- [x] `go test ./...`
 
 ## 남은 범위
 
