@@ -32,7 +32,7 @@
 | Phase 1 | Backend API DTO 및 handler skeleton | 완료 | `/api/chat`, `/api/documents`, tests |
 | Phase 2 | PostgreSQL schema/migration skeleton | 완료 | SQL schema, migration docs |
 | Phase 3 | Storage 및 Lightspeed provider skeleton | 완료 | storage/provider interfaces |
-| Phase 4 | Frontend bundle skeleton 및 v0.0.6 handoff | 진행 예정 | frontend shell, handoff |
+| Phase 4 | Frontend bundle skeleton 및 v0.0.6 handoff | 완료 | frontend shell, handoff |
 
 ## 5) 마이그레이션 또는 운영 전략
 
@@ -66,6 +66,6 @@
 - [x] document upload가 metadata를 표현한다.
 - [x] PostgreSQL schema/migration skeleton이 있다.
 - [x] storage/provider interface skeleton이 있다.
-- [ ] frontend bundle skeleton 위치가 정해진다.
-- [ ] `go fmt`, `go test`, `go build`가 성공한다.
-- [ ] v0.0.6 scope가 정리된다.
+- [x] frontend bundle skeleton 위치가 정해진다.
+- [x] `go fmt`, `go test`, `go build`가 성공한다.
+- [x] v0.0.6 scope가 정리된다.
