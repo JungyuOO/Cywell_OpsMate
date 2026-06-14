@@ -31,8 +31,8 @@
 | --- | --- | --- | --- |
 | Phase 1 | controller-runtime 의존성 및 API scheme 정리 | 완료 | `go.mod`, `groupversion_info.go`, 타입 marker |
 | Phase 2 | manager 및 reconciler 등록 | 완료 | `cmd/manager`, reconciler setup |
-| Phase 3 | CRD/RBAC/manager Kustomize 기본 매니페스트 | 진행 예정 | `config/*`, sample CR |
-| Phase 4 | 검증 및 v0.0.2 이관 범위 정리 | 진행 예정 | phase 문서 체크, 검증 결과 |
+| Phase 3 | CRD/RBAC/manager Kustomize 기본 매니페스트 | 완료 | `config/*`, sample CR |
+| Phase 4 | 검증 및 v0.0.2 이관 범위 정리 | 완료 | phase 문서 체크, 검증 결과 |
 
 ## 5) 마이그레이션 또는 운영 전략
 
@@ -62,6 +62,6 @@
 - [x] `OpsMateConfig` 타입이 scheme에 등록된다.
 - [x] manager가 controller-runtime 기반으로 실행 가능한 형태가 된다.
 - [x] reconciler가 `OpsMateConfig`에 대해 setup된다.
-- [ ] 최소 CRD/RBAC/sample manifest 구조가 작성된다.
-- [ ] `go fmt`, `go test`, `go build`가 성공한다.
-- [ ] 다음 버전으로 넘길 실제 리소스 reconcile 범위가 phase 문서에 기록된다.
+- [x] 최소 CRD/RBAC/sample manifest 구조가 작성된다.
+- [x] `go fmt`, `go test`, `go build`가 성공한다.
+- [x] 다음 버전으로 넘길 실제 리소스 reconcile 범위가 phase 문서에 기록된다.

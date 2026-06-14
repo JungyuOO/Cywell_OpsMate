@@ -1,0 +1,26 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cywell-opsmate-manager-role
+  namespace: cywell-opsmate-system
+rules:
+- apiGroups:
+  - opsmate.cywell.io
+  resources:
+  - opsmateconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - opsmate.cywell.io
+  resources:
+  - opsmateconfigs/status
+  verbs:
+  - get
+- apiGroups:
+  - opsmate.cywell.io
+  resources:
+  - opsmateconfigs/finalizers
+  verbs:
+  - update
