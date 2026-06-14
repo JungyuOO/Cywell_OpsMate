@@ -5,6 +5,7 @@ import (
 
 	opsmatev1alpha1 "github.com/JungyuOO/Cywell_OpsMate/api/v1alpha1"
 	"github.com/JungyuOO/Cywell_OpsMate/internal/controller/appserver"
+	consoleplugin "github.com/JungyuOO/Cywell_OpsMate/internal/controller/console"
 	"github.com/JungyuOO/Cywell_OpsMate/internal/controller/postgres"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -32,6 +33,7 @@ func SetupOpsMateConfigReconciler(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=opsmate.cywell.io,resources=opsmateconfigs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=console.openshift.io,resources=consoleplugins,verbs=get;list;watch;create;update;patch
 func (r *OpsMateConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	config := &opsmatev1alpha1.OpsMateConfig{}
 	if err := r.Get(ctx, req.NamespacedName, config); err != nil {
@@ -51,6 +53,13 @@ func (r *OpsMateConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			return ctrl.Result{}, err
 		}
 		if err := r.reconcileObject(ctx, object); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
+	if consoleplugin.Enabled(config) {
+		plugin := consoleplugin.Plugin(config)
+		if err := r.reconcileObject(ctx, plugin); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -106,7 +115,25 @@ func (r *OpsMateConfigReconciler) reconcileObject(ctx context.Context, desired c
 		})
 		return err
 	default:
-		return nil
+		current := desired.DeepCopyObject().(client.Object)
+		current.SetName(key.Name)
+		current.SetNamespace(key.Namespace)
+		_, err := controllerutil.CreateOrUpdate(ctx, r.Client, current, func() error {
+			current.SetLabels(desired.GetLabels())
+			current.SetOwnerReferences(desired.GetOwnerReferences())
+			unstructuredCurrent, ok := current.(interface {
+				UnstructuredContent() map[string]any
+				SetUnstructuredContent(map[string]any)
+			})
+			if ok {
+				unstructuredDesired := desired.(interface {
+					UnstructuredContent() map[string]any
+				})
+				unstructuredCurrent.SetUnstructuredContent(unstructuredDesired.UnstructuredContent())
+			}
+			return nil
+		})
+		return err
 	}
 }
 

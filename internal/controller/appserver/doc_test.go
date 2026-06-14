@@ -26,6 +26,14 @@ func TestDeploymentBuildsAppserverShape(t *testing.T) {
 	assertEnv(t, container.Env, "LIGHTSPEED_API_BASE_URL", "https://lightspeed.example.com")
 	assertEnv(t, container.Env, "LIGHTSPEED_CREDENTIALS_SECRET", "lightspeed-secret")
 	assertEnv(t, container.Env, "POSTGRES_SERVICE_HOST", "sample-postgres")
+	assertEnv(t, container.Env, "TLS_CERT_FILE", TLSMountPath+"/tls.crt")
+	assertEnv(t, container.Env, "TLS_KEY_FILE", TLSMountPath+"/tls.key")
+	if deployment.Spec.Template.Spec.Volumes[0].Secret.SecretName != "sample-appserver-tls" {
+		t.Fatalf("tls secret = %q, want sample-appserver-tls", deployment.Spec.Template.Spec.Volumes[0].Secret.SecretName)
+	}
+	if container.VolumeMounts[0].MountPath != TLSMountPath {
+		t.Fatalf("tls mount path = %q, want %q", container.VolumeMounts[0].MountPath, TLSMountPath)
+	}
 	if container.Ports[0].ContainerPort != Port {
 		t.Fatalf("container port = %d, want %d", container.Ports[0].ContainerPort, Port)
 	}
@@ -47,6 +55,9 @@ func TestServiceTargetsAppserverPort(t *testing.T) {
 	}
 	if service.Spec.Selector["app.kubernetes.io/component"] != "appserver" {
 		t.Fatalf("component selector = %q, want appserver", service.Spec.Selector["app.kubernetes.io/component"])
+	}
+	if service.Annotations[ServiceCertAnnotation] != "sample-appserver-tls" {
+		t.Fatalf("serving cert annotation = %q, want sample-appserver-tls", service.Annotations[ServiceCertAnnotation])
 	}
 }
 
