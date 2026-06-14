@@ -31,8 +31,8 @@
 | --- | --- | --- | --- |
 | Phase 1 | appserver desired resource helper | 완료 | appserver Deployment/Service builder, tests |
 | Phase 2 | PostgreSQL desired resource helper | 완료 | postgres Deployment/Service builder, tests |
-| Phase 3 | reconciler create/update 및 status | 진행 예정 | controller reconcile flow, RBAC update |
-| Phase 4 | 검증 및 v0.0.3 이관 범위 정리 | 진행 예정 | phase 문서 체크, 검증 결과 |
+| Phase 3 | reconciler create/update 및 status | 완료 | controller reconcile flow, RBAC update |
+| Phase 4 | 검증 및 v0.0.3 이관 범위 정리 | 완료 | phase 문서 체크, 검증 결과 |
 
 ## 5) 마이그레이션 또는 운영 전략
 
@@ -62,9 +62,9 @@
 
 - [x] appserver desired `Deployment`/`Service` helper와 단위 테스트가 있다.
 - [x] PostgreSQL desired `Deployment`/`Service` helper와 단위 테스트가 있다.
-- [ ] reconciler가 appserver/PostgreSQL 리소스를 create/update한다.
-- [ ] reconciler가 `OpsMateConfig` status를 최소 갱신한다.
-- [ ] RBAC에 필요한 apps/core/status 권한이 반영된다.
-- [ ] `go fmt`, `go test`, `go build`가 성공한다.
-- [ ] `kubectl kustomize config/default`가 성공한다.
-- [ ] v0.0.3 이관 범위가 phase 문서에 기록된다.
+- [x] reconciler가 appserver/PostgreSQL 리소스를 create/update한다.
+- [x] reconciler가 `OpsMateConfig` status를 최소 갱신한다.
+- [x] RBAC에 필요한 apps/core/status 권한이 반영된다.
+- [x] `go fmt`, `go test`, `go build`가 성공한다.
+- [x] `kubectl kustomize config/default`가 성공한다.
+- [x] v0.0.3 이관 범위가 phase 문서에 기록된다.

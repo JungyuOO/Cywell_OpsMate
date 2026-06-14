@@ -18,9 +18,33 @@ rules:
   - opsmateconfigs/status
   verbs:
   - get
+  - update
+  - patch
 - apiGroups:
   - opsmate.cywell.io
   resources:
   - opsmateconfigs/finalizers
   verbs:
   - update
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
