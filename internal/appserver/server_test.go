@@ -42,6 +42,34 @@ func TestHealthzRejectsNonGet(t *testing.T) {
 	}
 }
 
+func TestRetrievalMetricsEndpointReturnsSnapshot(t *testing.T) {
+	metrics := NewRetrievalMetrics()
+	metrics.ObserveRetrieval(RetrievalObservation{
+		Mode:        "pgvector",
+		ResultCount: 2,
+	})
+	server := NewServerWithOptions(ServerOptions{Metrics: metrics})
+	request := httptest.NewRequest(http.MethodGet, "/api/ops/retrieval-metrics", nil)
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	body := recorder.Body.String()
+	for _, want := range []string{
+		`"total":1`,
+		`"byMode":{"pgvector":1}`,
+		`"last":{"mode":"pgvector"`,
+		`"resultCount":2`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("body = %q, want %q", body, want)
+		}
+	}
+}
+
 func TestChatRoutesToProvider(t *testing.T) {
 	server := NewServer()
 	request := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"message":"Why is this pod not ready?","provider":"lightspeed"}`))

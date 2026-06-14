@@ -14,6 +14,7 @@ type Server struct {
 	documents DocumentRepository
 	storage   DocumentStorage
 	retriever Retriever
+	metrics   *RetrievalMetrics
 }
 
 func NewServer() *Server {
@@ -32,6 +33,7 @@ type ServerOptions struct {
 	Documents DocumentRepository
 	Storage   DocumentStorage
 	Retriever Retriever
+	Metrics   *RetrievalMetrics
 }
 
 func NewServerWithOptions(options ServerOptions) *Server {
@@ -43,18 +45,32 @@ func NewServerWithOptions(options ServerOptions) *Server {
 	if documents == nil {
 		documents = NewMemoryDocumentRepository()
 	}
+	metrics := options.Metrics
+	if metrics == nil {
+		metrics = NewRetrievalMetrics()
+	}
 	server := &Server{
 		mux:       http.NewServeMux(),
 		provider:  provider,
 		documents: documents,
 		storage:   options.Storage,
 		retriever: options.Retriever,
+		metrics:   metrics,
 	}
 	server.mux.HandleFunc("/healthz", server.healthz)
+	server.mux.HandleFunc("/api/ops/retrieval-metrics", server.retrievalMetrics)
 	server.mux.HandleFunc("/api/chat", server.chat)
 	server.mux.HandleFunc("/api/documents", server.documentsRoot)
 	server.mux.HandleFunc("/api/documents/", server.documentByID)
 	return server
+}
+
+func (s *Server) retrievalMetrics(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	writeJSON(w, http.StatusOK, s.metrics.Snapshot())
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {

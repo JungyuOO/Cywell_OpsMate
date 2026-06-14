@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestBytesToVectorLiteral(t *testing.T) {
@@ -61,6 +62,45 @@ func TestPostgresRetrieverObservesNoopRetrieval(t *testing.T) {
 	}
 	if observer.items[0].Mode != "bytea" {
 		t.Fatalf("mode = %q, want bytea", observer.items[0].Mode)
+	}
+}
+
+func TestRetrievalMetricsAggregatesObservations(t *testing.T) {
+	metrics := NewRetrievalMetrics()
+	metrics.ObserveRetrieval(RetrievalObservation{
+		Mode:        "bytea",
+		Duration:    10 * time.Millisecond,
+		ResultCount: 1,
+	})
+	metrics.ObserveRetrieval(RetrievalObservation{
+		Mode:          "pgvector",
+		Duration:      30 * time.Millisecond,
+		Slow:          true,
+		FailureReason: "pgvector_query_failed",
+	})
+
+	snapshot := metrics.Snapshot()
+
+	if snapshot.Total != 2 {
+		t.Fatalf("total = %d, want 2", snapshot.Total)
+	}
+	if snapshot.Slow != 1 {
+		t.Fatalf("slow = %d, want 1", snapshot.Slow)
+	}
+	if snapshot.Failures != 1 {
+		t.Fatalf("failures = %d, want 1", snapshot.Failures)
+	}
+	if snapshot.ByMode["bytea"] != 1 || snapshot.ByMode["pgvector"] != 1 {
+		t.Fatalf("by mode = %+v, want bytea and pgvector counts", snapshot.ByMode)
+	}
+	if snapshot.FailuresByReason["pgvector_query_failed"] != 1 {
+		t.Fatalf("failures by reason = %+v, want pgvector failure", snapshot.FailuresByReason)
+	}
+	if snapshot.AverageDurationMS != 20 {
+		t.Fatalf("average duration = %d, want 20", snapshot.AverageDurationMS)
+	}
+	if snapshot.Last.FailureReason != "pgvector_query_failed" {
+		t.Fatalf("last failure reason = %q, want pgvector_query_failed", snapshot.Last.FailureReason)
 	}
 }
 
