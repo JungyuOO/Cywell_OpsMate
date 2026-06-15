@@ -85,6 +85,36 @@ ORDER BY d.created_at, d.id`, r.namespace)
 	return documents, rows.Err()
 }
 
+func (r *PostgresDocumentRepository) ListReadyDocumentsForReembedding(ctx context.Context, limit int) ([]Document, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	rows, err := r.db.QueryContext(ctx, `
+SELECT d.id, d.filename, d.status, d.size_bytes, d.object_uri, d.embedding_status, d.uploaded_by, d.created_at, d.last_error,
+	(SELECT COUNT(*) FROM cyops_document_chunks c WHERE c.document_id = d.id) AS chunk_count
+FROM cyops_documents d
+WHERE d.namespace = $1
+  AND d.deleted_at IS NULL
+  AND d.status = 'ready'
+  AND d.embedding_status IN ('pending', 'ready', 'failed')
+ORDER BY d.updated_at, d.id
+LIMIT $2`, r.namespace, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var documents []Document
+	for rows.Next() {
+		document, err := scanDocument(rows)
+		if err != nil {
+			return nil, err
+		}
+		documents = append(documents, document)
+	}
+	return documents, rows.Err()
+}
+
 func (r *PostgresDocumentRepository) CreateContext(ctx context.Context, filename string, sizeBytes int64, uploadedBy string) (Document, error) {
 	return r.CreateStored(ctx, CreateStoredDocumentInput{
 		Filename:   filename,

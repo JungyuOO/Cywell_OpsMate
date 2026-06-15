@@ -75,6 +75,43 @@ func TestDeploymentDefaultsToPGVectorImageWhenRequired(t *testing.T) {
 	}
 }
 
+func TestPGVectorMigrationJobRequiresApproval(t *testing.T) {
+	config := sampleConfig()
+	config.Spec.Database.PGVectorMigrationApproved = false
+	config.Spec.Database.DSNSecretRef = "postgres-dsn"
+	config.Spec.Embedding.Dimensions = 768
+
+	if _, err := PGVectorMigrationJob(config); err == nil {
+		t.Fatal("expected approval error")
+	}
+}
+
+func TestPGVectorMigrationJobBuildsSecretBackedTemplate(t *testing.T) {
+	config := sampleConfig()
+	config.Spec.Database.PGVectorMigrationApproved = true
+	config.Spec.Database.DSNSecretRef = "postgres-dsn"
+	config.Spec.Database.DSNSecretKey = "url"
+	config.Spec.Embedding.Dimensions = 768
+
+	job, err := PGVectorMigrationJob(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if job.Name != "sample-pgvector-migration" {
+		t.Fatalf("name = %q", job.Name)
+	}
+	container := job.Spec.Template.Spec.Containers[0]
+	if container.Command[0] != "cyops-pgvector-migrate" {
+		t.Fatalf("command = %v", container.Command)
+	}
+	assertSecretEnv(t, container.Env, "CYOPS_POSTGRES_DSN", "postgres-dsn", "url")
+	assertEnv(t, container.Env, "CYOPS_EMBEDDING_DIMENSIONS", "768")
+	if container.Env[0].Value != "" {
+		t.Fatal("dsn value is set directly, want SecretKeyRef only")
+	}
+}
+
 func assertEnv(t *testing.T, env []corev1.EnvVar, name string, want string) {
 	t.Helper()
 	for _, item := range env {

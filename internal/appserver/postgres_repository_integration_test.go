@@ -290,6 +290,76 @@ func TestPostgresEmbeddingIntegration(t *testing.T) {
 	}
 }
 
+func TestPostgresReembeddingMarksFailures(t *testing.T) {
+	dsn := os.Getenv("CYOPS_POSTGRES_TEST_DSN")
+	if dsn == "" {
+		t.Skip("CYOPS_POSTGRES_TEST_DSN is not set")
+	}
+
+	ctx := context.Background()
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	if err := db.PingContext(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := ApplyMigrations(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(ctx, "TRUNCATE cyops_chat_messages, cyops_chat_sessions, cyops_document_embeddings, cyops_document_chunks, cyops_documents"); err != nil {
+		t.Fatal(err)
+	}
+
+	repository := NewPostgresDocumentRepository(db, "opsmate")
+	repository.newID = fixedIDs(
+		"00000000-0000-4000-8000-000000000031",
+		"00000000-0000-4000-8000-000000000032",
+	)
+	document, err := repository.CreateStored(ctx, CreateStoredDocumentInput{
+		Filename:   "runbook.md",
+		SizeBytes:  20,
+		ObjectURI:  "/tmp/runbook.md",
+		UploadedBy: "admin",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.ReplaceChunks(ctx, document.ID, []DocumentChunk{{
+		Text:       "check pod status",
+		TokenCount: 3,
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repository.CompleteIngestion(ctx, document.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := EmbeddingService{
+		Repository: repository,
+		Provider:   staticEmbeddingProvider{err: errors.New("provider unavailable")},
+	}.ReembedReadyDocuments(ctx, ReembeddingRequest{Limit: 10})
+	if err == nil {
+		t.Fatal("expected re-embedding error")
+	}
+	if result.Processed != 1 || result.Failed != 1 {
+		t.Fatalf("result = %+v, want one failed document", result)
+	}
+
+	updated, err := repository.GetContext(ctx, document.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.EmbeddingStatus != "failed" {
+		t.Fatalf("embedding status = %q, want failed", updated.EmbeddingStatus)
+	}
+	if updated.LastError != "provider unavailable" {
+		t.Fatalf("last error = %q, want provider unavailable", updated.LastError)
+	}
+}
+
 func TestPGVectorReadinessReportsMissingExtension(t *testing.T) {
 	dsn := os.Getenv("CYOPS_POSTGRES_TEST_DSN")
 	if dsn == "" {

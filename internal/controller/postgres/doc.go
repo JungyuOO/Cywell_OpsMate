@@ -5,17 +5,19 @@ import (
 
 	opsmatev1alpha1 "github.com/JungyuOO/Cywell_OpsMate/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 const (
-	DefaultImage  = "postgres:16-alpine"
-	PGVectorImage = "pgvector/pgvector:pg16"
-	PortName      = "postgres"
-	Port          = int32(5432)
-	DefaultDBName = "opsmate"
+	DefaultImage   = "postgres:16-alpine"
+	PGVectorImage  = "pgvector/pgvector:pg16"
+	MigrationImage = "ghcr.io/jungyuoo/cywell-opsmate-appserver:latest"
+	PortName       = "postgres"
+	Port           = int32(5432)
+	DefaultDBName  = "opsmate"
 )
 
 func Deployment(config *opsmatev1alpha1.OpsMateConfig) *appsv1.Deployment {
@@ -96,12 +98,72 @@ func Service(config *opsmatev1alpha1.OpsMateConfig) *corev1.Service {
 	}
 }
 
+func PGVectorMigrationJob(config *opsmatev1alpha1.OpsMateConfig) (*batchv1.Job, error) {
+	if !config.Spec.Database.PGVectorMigrationApproved {
+		return nil, fmt.Errorf("pgvector migration approval is required")
+	}
+	if config.Spec.Database.DSNSecretRef == "" {
+		return nil, fmt.Errorf("postgres dsn secret reference is required")
+	}
+	if config.Spec.Embedding.Dimensions <= 0 {
+		return nil, fmt.Errorf("embedding dimensions are required")
+	}
+
+	labels := labelsFor(config)
+	labels["app.kubernetes.io/component"] = "pgvector-migration"
+	backoffLimit := int32(0)
+	dsnKey := config.Spec.Database.DSNSecretKey
+	if dsnKey == "" {
+		dsnKey = "dsn"
+	}
+
+	return &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      PGVectorMigrationJobName(config),
+			Namespace: config.Namespace,
+			Labels:    labels,
+		},
+		Spec: batchv1.JobSpec{
+			BackoffLimit: &backoffLimit,
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{Labels: labels},
+				Spec: corev1.PodSpec{
+					RestartPolicy: corev1.RestartPolicyNever,
+					Containers: []corev1.Container{
+						{
+							Name:    "pgvector-migration",
+							Image:   MigrationImage,
+							Command: []string{"cyops-pgvector-migrate"},
+							Env: []corev1.EnvVar{
+								{
+									Name: "CYOPS_POSTGRES_DSN",
+									ValueFrom: &corev1.EnvVarSource{
+										SecretKeyRef: &corev1.SecretKeySelector{
+											LocalObjectReference: corev1.LocalObjectReference{Name: config.Spec.Database.DSNSecretRef},
+											Key:                  dsnKey,
+										},
+									},
+								},
+								{Name: "CYOPS_EMBEDDING_DIMENSIONS", Value: fmt.Sprintf("%d", config.Spec.Embedding.Dimensions)},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, nil
+}
+
 func ResourceName(config *opsmatev1alpha1.OpsMateConfig) string {
 	return fmt.Sprintf("%s-postgres", config.Name)
 }
 
 func SecretName(config *opsmatev1alpha1.OpsMateConfig) string {
 	return fmt.Sprintf("%s-postgres-credentials", config.Name)
+}
+
+func PGVectorMigrationJobName(config *opsmatev1alpha1.OpsMateConfig) string {
+	return fmt.Sprintf("%s-pgvector-migration", config.Name)
 }
 
 func labelsFor(config *opsmatev1alpha1.OpsMateConfig) map[string]string {
