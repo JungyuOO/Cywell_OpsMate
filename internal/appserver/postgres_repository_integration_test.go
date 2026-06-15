@@ -360,6 +360,70 @@ func TestPostgresReembeddingMarksFailures(t *testing.T) {
 	}
 }
 
+func TestPostgresReembeddingEndpointReturnsCounts(t *testing.T) {
+	dsn := os.Getenv("CYOPS_POSTGRES_TEST_DSN")
+	if dsn == "" {
+		t.Skip("CYOPS_POSTGRES_TEST_DSN is not set")
+	}
+
+	ctx := context.Background()
+	db, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	if err := db.PingContext(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := ApplyMigrations(ctx, db); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(ctx, "TRUNCATE cyops_chat_messages, cyops_chat_sessions, cyops_document_embeddings, cyops_document_chunks, cyops_documents"); err != nil {
+		t.Fatal(err)
+	}
+
+	repository := NewPostgresDocumentRepository(db, "opsmate")
+	repository.newID = fixedIDs(
+		"00000000-0000-4000-8000-000000000041",
+		"00000000-0000-4000-8000-000000000042",
+	)
+	document, err := repository.CreateStored(ctx, CreateStoredDocumentInput{
+		Filename:   "runbook.md",
+		SizeBytes:  20,
+		ObjectURI:  "/tmp/runbook.md",
+		UploadedBy: "admin",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repository.ReplaceChunks(ctx, document.ID, []DocumentChunk{{
+		Text:       "check pod status",
+		TokenCount: 3,
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repository.CompleteIngestion(ctx, document.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServerWithOptions(ServerOptions{
+		Documents: repository,
+		Embedder:  DeterministicEmbeddingProvider{Dimensions: 8},
+	})
+	request := httptest.NewRequest(http.MethodPost, "/api/ops/reembed", strings.NewReader(`{"limit":10}`))
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	if !strings.Contains(recorder.Body.String(), `"processed":1`) || !strings.Contains(recorder.Body.String(), `"failed":0`) {
+		t.Fatalf("body = %q, want processed and failed counts", recorder.Body.String())
+	}
+}
+
 func TestPGVectorReadinessReportsMissingExtension(t *testing.T) {
 	dsn := os.Getenv("CYOPS_POSTGRES_TEST_DSN")
 	if dsn == "" {

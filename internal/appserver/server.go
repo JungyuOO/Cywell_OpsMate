@@ -15,6 +15,7 @@ type Server struct {
 	storage   DocumentStorage
 	retriever Retriever
 	metrics   *RetrievalMetrics
+	embedder  EmbeddingProvider
 }
 
 func NewServer() *Server {
@@ -34,6 +35,7 @@ type ServerOptions struct {
 	Storage   DocumentStorage
 	Retriever Retriever
 	Metrics   *RetrievalMetrics
+	Embedder  EmbeddingProvider
 }
 
 func NewServerWithOptions(options ServerOptions) *Server {
@@ -56,13 +58,46 @@ func NewServerWithOptions(options ServerOptions) *Server {
 		storage:   options.Storage,
 		retriever: options.Retriever,
 		metrics:   metrics,
+		embedder:  options.Embedder,
 	}
 	server.mux.HandleFunc("/healthz", server.healthz)
 	server.mux.HandleFunc("/api/ops/retrieval-metrics", server.retrievalMetrics)
+	server.mux.HandleFunc("/api/ops/reembed", server.reembedReadyDocuments)
 	server.mux.HandleFunc("/api/chat", server.chat)
 	server.mux.HandleFunc("/api/documents", server.documentsRoot)
 	server.mux.HandleFunc("/api/documents/", server.documentByID)
 	return server
+}
+
+func (s *Server) reembedReadyDocuments(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	repository, ok := s.documents.(*PostgresDocumentRepository)
+	if !ok {
+		writeError(w, http.StatusConflict, "re-embedding requires postgres document repository")
+		return
+	}
+	var request ReembeddingAPIRequest
+	if r.Body != nil {
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil && err != io.EOF {
+			writeError(w, http.StatusBadRequest, "invalid json body")
+			return
+		}
+	}
+	result, err := EmbeddingService{
+		Repository: repository,
+		Provider:   s.embedder,
+	}.ReembedReadyDocuments(r.Context(), ReembeddingRequest{Limit: request.Limit})
+	status := http.StatusOK
+	if err != nil {
+		status = http.StatusBadGateway
+	}
+	writeJSON(w, status, ReembeddingAPIResponse{
+		Processed: result.Processed,
+		Failed:    result.Failed,
+	})
 }
 
 func (s *Server) retrievalMetrics(w http.ResponseWriter, r *http.Request) {

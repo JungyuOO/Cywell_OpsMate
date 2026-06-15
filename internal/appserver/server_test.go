@@ -70,6 +70,21 @@ func TestRetrievalMetricsEndpointReturnsSnapshot(t *testing.T) {
 	}
 }
 
+func TestReembedEndpointRequiresPostgresRepository(t *testing.T) {
+	server := NewServer()
+	request := httptest.NewRequest(http.MethodPost, "/api/ops/reembed", strings.NewReader(`{"limit":1}`))
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusConflict, recorder.Body.String())
+	}
+	if !strings.Contains(recorder.Body.String(), "postgres document repository") {
+		t.Fatalf("body = %q, want postgres repository message", recorder.Body.String())
+	}
+}
+
 func TestChatRoutesToProvider(t *testing.T) {
 	server := NewServer()
 	request := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"message":"Why is this pod not ready?","provider":"lightspeed"}`))
