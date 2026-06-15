@@ -19,6 +19,15 @@ func TestPluginBuildsConsolePluginShape(t *testing.T) {
 	if plugin.GetName() != "sample-console" {
 		t.Fatalf("name = %q, want sample-console", plugin.GetName())
 	}
+	if plugin.GetAnnotations()[PrimaryEntryAnnotation] != "openshift-web-console" {
+		t.Fatalf("primary entry annotation = %q", plugin.GetAnnotations()[PrimaryEntryAnnotation])
+	}
+	if plugin.GetAnnotations()[DiagnosticsAnnotation] != DiagnosticsPath {
+		t.Fatalf("diagnostics annotation = %q", plugin.GetAnnotations()[DiagnosticsAnnotation])
+	}
+	if plugin.GetAnnotations()[FallbackRouteAnnotation] != "disabled" {
+		t.Fatalf("fallback route annotation = %q", plugin.GetAnnotations()[FallbackRouteAnnotation])
+	}
 	displayName, _, err := unstructured.NestedString(plugin.Object, "spec", "displayName")
 	if err != nil {
 		t.Fatal(err)
@@ -39,6 +48,17 @@ func TestPluginBuildsConsolePluginShape(t *testing.T) {
 	}
 	if serviceNamespace != "opsmate" {
 		t.Fatalf("service namespace = %q, want opsmate", serviceNamespace)
+	}
+}
+
+func TestPluginMarksFallbackRouteWhenEnabled(t *testing.T) {
+	config := sampleConfig()
+	config.Spec.Console.AdminAuthProxyEnabled = true
+
+	plugin := Plugin(config)
+
+	if plugin.GetAnnotations()[FallbackRouteAnnotation] != "enabled" {
+		t.Fatalf("fallback route annotation = %q", plugin.GetAnnotations()[FallbackRouteAnnotation])
 	}
 }
 

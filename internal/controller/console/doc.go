@@ -10,7 +10,11 @@ import (
 )
 
 const (
-	DefaultDisplayName = "Cywell OpsMate"
+	DefaultDisplayName      = "Cywell OpsMate"
+	DiagnosticsPath         = "/api/ops/diagnostics"
+	PrimaryEntryAnnotation  = "cyops.cywell.io/primary-entry"
+	DiagnosticsAnnotation   = "cyops.cywell.io/diagnostics-path"
+	FallbackRouteAnnotation = "cyops.cywell.io/fallback-admin-route"
 )
 
 var ConsolePluginGroupVersionKind = schema.GroupVersionKind{
@@ -33,6 +37,11 @@ func Plugin(config *opsmatev1alpha1.OpsMateConfig) *unstructured.Unstructured {
 	object.SetGroupVersionKind(ConsolePluginGroupVersionKind)
 	object.SetName(ResourceName(config))
 	object.SetLabels(labelsFor(config))
+	object.SetAnnotations(map[string]string{
+		PrimaryEntryAnnotation:  "openshift-web-console",
+		DiagnosticsAnnotation:   DiagnosticsPath,
+		FallbackRouteAnnotation: fallbackRouteMode(config),
+	})
 	object.Object["spec"] = map[string]any{
 		"displayName": displayName,
 		"backend": map[string]any{
@@ -46,6 +55,13 @@ func Plugin(config *opsmatev1alpha1.OpsMateConfig) *unstructured.Unstructured {
 		},
 	}
 	return object
+}
+
+func fallbackRouteMode(config *opsmatev1alpha1.OpsMateConfig) string {
+	if config.Spec.Console.AdminAuthProxyEnabled {
+		return "enabled"
+	}
+	return "disabled"
 }
 
 func ResourceName(config *opsmatev1alpha1.OpsMateConfig) string {

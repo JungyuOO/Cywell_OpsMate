@@ -79,6 +79,7 @@ type DiagnosticsResponse struct {
 	Admin            AdminDiagnostics         `json:"admin"`
 	Reembedding      ReembeddingDiagnostics   `json:"reembedding"`
 	DiagnosticsLinks DiagnosticsLinks         `json:"diagnosticsLinks"`
+	UI               DiagnosticsUI            `json:"ui"`
 }
 
 type DocumentDiagnostics struct {
@@ -100,6 +101,23 @@ type DiagnosticsLinks struct {
 	RetrievalMetrics string `json:"retrievalMetrics"`
 	Reembed          string `json:"reembed"`
 	Documents        string `json:"documents"`
+	Schema           string `json:"schema"`
+	PrimarySurface   string `json:"primarySurface"`
+}
+
+type DiagnosticsUI struct {
+	Title         string `json:"title"`
+	PrimaryEntry  string `json:"primaryEntry"`
+	FallbackRoute string `json:"fallbackRoute"`
+}
+
+type DiagnosticsSchemaResponse struct {
+	Version         string   `json:"version"`
+	PrimaryEntry    string   `json:"primaryEntry"`
+	RequiredAuth    string   `json:"requiredAuth"`
+	AggregateOnly   bool     `json:"aggregateOnly"`
+	ForbiddenFields []string `json:"forbiddenFields"`
+	Fields          []string `json:"fields"`
 }
 
 type ProviderRequest struct {

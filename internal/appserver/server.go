@@ -72,6 +72,7 @@ func NewServerWithOptions(options ServerOptions) *Server {
 	}
 	server.mux.HandleFunc("/healthz", server.healthz)
 	server.mux.HandleFunc("/api/ops/diagnostics", server.diagnostics)
+	server.mux.HandleFunc("/api/ops/diagnostics/schema", server.diagnosticsSchema)
 	server.mux.HandleFunc("/api/ops/retrieval-metrics", server.retrievalMetrics)
 	server.mux.HandleFunc("/api/ops/reembed", server.reembedReadyDocuments)
 	server.mux.HandleFunc("/api/chat", server.chat)
@@ -151,6 +152,46 @@ func (s *Server) diagnostics(w http.ResponseWriter, r *http.Request) {
 			RetrievalMetrics: "/api/ops/retrieval-metrics",
 			Reembed:          "/api/ops/reembed",
 			Documents:        "/api/documents",
+			Schema:           "/api/ops/diagnostics/schema",
+			PrimarySurface:   "openshift-web-console",
+		},
+		UI: DiagnosticsUI{
+			Title:         "CYOps Diagnostics",
+			PrimaryEntry:  "openshift-web-console",
+			FallbackRoute: "optional",
+		},
+	})
+}
+
+func (s *Server) diagnosticsSchema(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	if !s.authorizeAdmin(r) {
+		writeError(w, http.StatusForbidden, "admin authorization required")
+		return
+	}
+	writeJSON(w, http.StatusOK, DiagnosticsSchemaResponse{
+		Version:       "v0.0.23",
+		PrimaryEntry:  "openshift-web-console",
+		RequiredAuth:  "console-session-or-admin-allowlist",
+		AggregateOnly: true,
+		ForbiddenFields: []string{
+			"documentContent",
+			"promptText",
+			"postgresDsn",
+			"adminToken",
+			"embeddingToken",
+			"rawProviderPayload",
+		},
+		Fields: []string{
+			"retrieval",
+			"documents",
+			"admin",
+			"reembedding",
+			"diagnosticsLinks",
+			"ui",
 		},
 	})
 }
