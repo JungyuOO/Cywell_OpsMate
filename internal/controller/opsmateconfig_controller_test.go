@@ -249,6 +249,37 @@ func TestReconcileUpdatesExistingConsolePlugin(t *testing.T) {
 	}
 }
 
+func TestReconcilePreservesServiceAnnotations(t *testing.T) {
+	ctx := context.Background()
+	scheme := testScheme(t)
+	config := &opsmatev1alpha1.OpsMateConfig{}
+	config.Name = "sample"
+	config.Namespace = "opsmate"
+	config.Spec.Lightspeed.APIBaseURL = "https://lightspeed.example.com"
+	config.Spec.Console.Enabled = true
+
+	reconciler := &OpsMateConfigReconciler{
+		Client: fake.NewClientBuilder().
+			WithScheme(scheme).
+			WithStatusSubresource(&opsmatev1alpha1.OpsMateConfig{}).
+			WithObjects(config).
+			Build(),
+		Scheme: scheme,
+	}
+
+	if _, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(config)}); err != nil {
+		t.Fatal(err)
+	}
+
+	service := &corev1.Service{}
+	if err := reconciler.Get(ctx, client.ObjectKey{Namespace: "opsmate", Name: "sample-appserver"}, service); err != nil {
+		t.Fatal(err)
+	}
+	if service.Annotations["service.beta.openshift.io/serving-cert-secret-name"] != "sample-appserver-tls" {
+		t.Fatalf("serving cert annotation = %q", service.Annotations["service.beta.openshift.io/serving-cert-secret-name"])
+	}
+}
+
 func assertDeploymentExists(t *testing.T, ctx context.Context, c client.Client, name string) {
 	t.Helper()
 	deployment := &appsv1.Deployment{}

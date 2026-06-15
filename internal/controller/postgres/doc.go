@@ -18,6 +18,9 @@ const (
 	PortName       = "postgres"
 	Port           = int32(5432)
 	DefaultDBName  = "opsmate"
+	DataMountPath  = "/var/lib/postgresql/data"
+	RunMountPath   = "/var/run/postgresql"
+	PGDataPath     = "/var/lib/postgresql/data/pgdata"
 )
 
 func Deployment(config *opsmatev1alpha1.OpsMateConfig) *appsv1.Deployment {
@@ -46,6 +49,7 @@ func Deployment(config *opsmatev1alpha1.OpsMateConfig) *appsv1.Deployment {
 							Env: []corev1.EnvVar{
 								{Name: "POSTGRES_DB", Value: DefaultDBName},
 								{Name: "POSTGRES_USER", Value: DefaultDBName},
+								{Name: "PGDATA", Value: PGDataPath},
 								{
 									Name: "POSTGRES_PASSWORD",
 									ValueFrom: &corev1.EnvVarSource{
@@ -58,7 +62,25 @@ func Deployment(config *opsmatev1alpha1.OpsMateConfig) *appsv1.Deployment {
 								{Name: "POSTGRES_SHARED_BUFFERS", Value: config.Spec.Database.SharedBuffers},
 								{Name: "POSTGRES_MAX_CONNECTIONS", Value: fmt.Sprintf("%d", config.Spec.Database.MaxConnections)},
 							},
+							VolumeMounts: []corev1.VolumeMount{
+								{Name: "postgres-data", MountPath: DataMountPath},
+								{Name: "postgres-run", MountPath: RunMountPath},
+							},
+							SecurityContext: &corev1.SecurityContext{
+								AllowPrivilegeEscalation: ptr(false),
+								RunAsNonRoot:             ptr(true),
+								Capabilities: &corev1.Capabilities{
+									Drop: []corev1.Capability{"ALL"},
+								},
+							},
 						},
+					},
+					SecurityContext: &corev1.PodSecurityContext{
+						RunAsNonRoot: ptr(true),
+					},
+					Volumes: []corev1.Volume{
+						{Name: "postgres-data", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
+						{Name: "postgres-run", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 					},
 				},
 			},
@@ -194,6 +216,10 @@ func labelsFor(config *opsmatev1alpha1.OpsMateConfig) map[string]string {
 		"app.kubernetes.io/instance":   config.Name,
 		"app.kubernetes.io/managed-by": "cywell-opsmate-operator",
 	}
+}
+
+func ptr[T any](value T) *T {
+	return &value
 }
 
 // Package postgres will manage the PostgreSQL database used by Lightspeed-style
