@@ -203,6 +203,52 @@ func TestReconcileSkipsDisabledConsolePlugin(t *testing.T) {
 	}
 }
 
+func TestReconcileUpdatesExistingConsolePlugin(t *testing.T) {
+	ctx := context.Background()
+	scheme := testScheme(t)
+	config := &opsmatev1alpha1.OpsMateConfig{}
+	config.Name = "sample"
+	config.Namespace = "opsmate"
+	config.Spec.Console.Enabled = true
+	config.Spec.Console.DisplayName = "OpsMate"
+
+	reconciler := &OpsMateConfigReconciler{
+		Client: fake.NewClientBuilder().
+			WithScheme(scheme).
+			WithStatusSubresource(&opsmatev1alpha1.OpsMateConfig{}).
+			WithObjects(config).
+			Build(),
+		Scheme: scheme,
+	}
+
+	if _, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(config)}); err != nil {
+		t.Fatal(err)
+	}
+	updatedConfig := &opsmatev1alpha1.OpsMateConfig{}
+	if err := reconciler.Get(ctx, client.ObjectKeyFromObject(config), updatedConfig); err != nil {
+		t.Fatal(err)
+	}
+	updatedConfig.Spec.Console.DisplayName = "CYOps"
+	if err := reconciler.Update(ctx, updatedConfig); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(config)}); err != nil {
+		t.Fatal(err)
+	}
+
+	plugin := consolePluginObject()
+	if err := reconciler.Get(ctx, client.ObjectKey{Name: "sample-console"}, plugin); err != nil {
+		t.Fatal(err)
+	}
+	displayName, _, err := unstructured.NestedString(plugin.Object, "spec", "displayName")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if displayName != "CYOps" {
+		t.Fatalf("displayName = %q, want CYOps", displayName)
+	}
+}
+
 func assertDeploymentExists(t *testing.T, ctx context.Context, c client.Client, name string) {
 	t.Helper()
 	deployment := &appsv1.Deployment{}
