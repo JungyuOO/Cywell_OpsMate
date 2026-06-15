@@ -12,6 +12,7 @@ import (
 
 const (
 	DefaultImage  = "postgres:16-alpine"
+	PGVectorImage = "pgvector/pgvector:pg16"
 	PortName      = "postgres"
 	Port          = int32(5432)
 	DefaultDBName = "opsmate"
@@ -36,7 +37,7 @@ func Deployment(config *opsmatev1alpha1.OpsMateConfig) *appsv1.Deployment {
 					Containers: []corev1.Container{
 						{
 							Name:  "postgres",
-							Image: DefaultImage,
+							Image: imageFor(config),
 							Ports: []corev1.ContainerPort{
 								{Name: PortName, ContainerPort: Port},
 							},
@@ -61,6 +62,16 @@ func Deployment(config *opsmatev1alpha1.OpsMateConfig) *appsv1.Deployment {
 			},
 		},
 	}
+}
+
+func imageFor(config *opsmatev1alpha1.OpsMateConfig) string {
+	if config.Spec.Database.Image != "" {
+		return config.Spec.Database.Image
+	}
+	if config.Spec.Embedding.RequirePGVector {
+		return PGVectorImage
+	}
+	return DefaultImage
 }
 
 func Service(config *opsmatev1alpha1.OpsMateConfig) *corev1.Service {

@@ -60,10 +60,37 @@ spec:
                       type: string
                     indexID:
                       type: string
+              embedding:
+                type: object
+                properties:
+                  endpointURL:
+                    type: string
+                  model:
+                    type: string
+                  dimensions:
+                    type: integer
+                    format: int32
+                  credentialsSecretRef:
+                    type: string
+                  credentialsSecretKey:
+                    type: string
+                  requirePGVector:
+                    type: boolean
+                  retrievalMode:
+                    type: string
+                  retrievalSlowMillis:
+                    type: integer
+                    format: int32
               database:
                 type: object
                 properties:
                   type:
+                    type: string
+                  image:
+                    type: string
+                  dsnSecretRef:
+                    type: string
+                  dsnSecretKey:
                     type: string
                   sharedBuffers:
                     type: string

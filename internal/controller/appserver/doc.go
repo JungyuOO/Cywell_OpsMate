@@ -108,6 +108,21 @@ func appserverEnv(config *opsmatev1alpha1.OpsMateConfig) []corev1.EnvVar {
 			},
 		})
 	}
+	if config.Spec.Database.DSNSecretRef != "" {
+		key := config.Spec.Database.DSNSecretKey
+		if key == "" {
+			key = "dsn"
+		}
+		env = append(env, corev1.EnvVar{
+			Name: "CYOPS_POSTGRES_DSN",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: config.Spec.Database.DSNSecretRef},
+					Key:                  key,
+				},
+			},
+		})
+	}
 	return env
 }
 

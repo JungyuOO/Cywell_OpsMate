@@ -17,8 +17,8 @@ func TestDeploymentBuildsPostgresShape(t *testing.T) {
 		t.Fatalf("name = %q, want sample-postgres", deployment.Name)
 	}
 	container := deployment.Spec.Template.Spec.Containers[0]
-	if container.Image != DefaultImage {
-		t.Fatalf("image = %q, want %q", container.Image, DefaultImage)
+	if container.Image != "registry.example.com/pgvector:pg16" {
+		t.Fatalf("image = %q, want custom pgvector image", container.Image)
 	}
 	assertEnv(t, container.Env, "POSTGRES_DB", DefaultDBName)
 	assertEnv(t, container.Env, "POSTGRES_SHARED_BUFFERS", "128MB")
@@ -54,10 +54,24 @@ func sampleConfig() *opsmatev1alpha1.OpsMateConfig {
 		Spec: opsmatev1alpha1.OpsMateConfigSpec{
 			Database: opsmatev1alpha1.DatabaseSpec{
 				Type:           "postgres",
+				Image:          "registry.example.com/pgvector:pg16",
 				SharedBuffers:  "128MB",
 				MaxConnections: 100,
 			},
 		},
+	}
+}
+
+func TestDeploymentDefaultsToPGVectorImageWhenRequired(t *testing.T) {
+	config := sampleConfig()
+	config.Spec.Database.Image = ""
+	config.Spec.Embedding.RequirePGVector = true
+
+	deployment := Deployment(config)
+	container := deployment.Spec.Template.Spec.Containers[0]
+
+	if container.Image != PGVectorImage {
+		t.Fatalf("image = %q, want %q", container.Image, PGVectorImage)
 	}
 }
 
