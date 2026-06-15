@@ -9,6 +9,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
@@ -19,9 +20,16 @@ func main() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(opsmatev1alpha1.AddToScheme(scheme))
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	options := ctrl.Options{
 		Scheme: scheme,
-	})
+	}
+	if namespace := watchedNamespace(); namespace != "" {
+		options.Cache.DefaultNamespaces = map[string]cache.Config{
+			namespace: {},
+		}
+	}
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), options)
 	if err != nil {
 		ctrl.Log.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -36,4 +44,11 @@ func main() {
 		ctrl.Log.Error(err, "manager exited")
 		os.Exit(1)
 	}
+}
+
+func watchedNamespace() string {
+	if namespace := os.Getenv("WATCH_NAMESPACE"); namespace != "" {
+		return namespace
+	}
+	return os.Getenv("POD_NAMESPACE")
 }
