@@ -64,21 +64,174 @@ func (r *OpsMateConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}
 
-	config.Status.OverallStatus = "Ready"
-	ready := metav1.Condition{
-		Type:               "Ready",
-		Status:             metav1.ConditionTrue,
-		ObservedGeneration: config.Generation,
-		LastTransitionTime: metav1.Now(),
-		Reason:             "ResourcesReconciled",
-		Message:            "Appserver and PostgreSQL resources are reconciled.",
-	}
-	config.Status.Conditions = upsertCondition(config.Status.Conditions, ready)
+	config.Status.Conditions = statusConditions(config)
+	config.Status.OverallStatus = overallStatus(config.Status.Conditions)
 	if err := r.Status().Update(ctx, config); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func statusConditions(config *opsmatev1alpha1.OpsMateConfig) []metav1.Condition {
+	conditions := []metav1.Condition{}
+	ready := condition(
+		"Ready",
+		metav1.ConditionTrue,
+		config.Generation,
+		"ResourcesReconciled",
+		"Appserver and PostgreSQL resources are reconciled.",
+	)
+	conditions = upsertCondition(conditions, ready)
+	conditions = upsertCondition(conditions, postgresDSNConfiguredCondition(config))
+	conditions = upsertCondition(conditions, pgVectorRequiredCondition(config))
+	conditions = upsertCondition(conditions, pgVectorMigrationApprovedCondition(config))
+	conditions = upsertCondition(conditions, pgVectorReadyCondition(config))
+	conditions = upsertCondition(conditions, retrievalModeReadyCondition(config))
+	return conditions
+}
+
+func condition(conditionType string, status metav1.ConditionStatus, generation int64, reason string, message string) metav1.Condition {
+	return metav1.Condition{
+		Type:               conditionType,
+		Status:             status,
+		ObservedGeneration: generation,
+		LastTransitionTime: metav1.Now(),
+		Reason:             reason,
+		Message:            message,
+	}
+}
+
+func postgresDSNConfiguredCondition(config *opsmatev1alpha1.OpsMateConfig) metav1.Condition {
+	if config.Spec.Database.DSNSecretRef != "" {
+		return condition(
+			"PostgresDSNConfigured",
+			metav1.ConditionTrue,
+			config.Generation,
+			"SecretReferenceConfigured",
+			"PostgreSQL DSN is configured through a Secret reference.",
+		)
+	}
+	return condition(
+		"PostgresDSNConfigured",
+		metav1.ConditionFalse,
+		config.Generation,
+		"SecretReferenceMissing",
+		"PostgreSQL DSN Secret reference is not configured.",
+	)
+}
+
+func pgVectorRequiredCondition(config *opsmatev1alpha1.OpsMateConfig) metav1.Condition {
+	if config.Spec.Embedding.RequirePGVector {
+		return condition(
+			"PGVectorRequired",
+			metav1.ConditionTrue,
+			config.Generation,
+			"RequiredBySpec",
+			"pgvector startup validation is required by spec.",
+		)
+	}
+	return condition(
+		"PGVectorRequired",
+		metav1.ConditionFalse,
+		config.Generation,
+		"NotRequiredBySpec",
+		"pgvector startup validation is not required by spec.",
+	)
+}
+
+func pgVectorMigrationApprovedCondition(config *opsmatev1alpha1.OpsMateConfig) metav1.Condition {
+	if config.Spec.Database.PGVectorMigrationApproved {
+		return condition(
+			"PGVectorMigrationApproved",
+			metav1.ConditionTrue,
+			config.Generation,
+			"ApprovedBySpec",
+			"pgvector migration is explicitly approved by spec.",
+		)
+	}
+	return condition(
+		"PGVectorMigrationApproved",
+		metav1.ConditionFalse,
+		config.Generation,
+		"ApprovalRequired",
+		"pgvector migration is not approved; reconciliation will not apply it automatically.",
+	)
+}
+
+func pgVectorReadyCondition(config *opsmatev1alpha1.OpsMateConfig) metav1.Condition {
+	if !config.Spec.Embedding.RequirePGVector {
+		return condition(
+			"PGVectorReady",
+			metav1.ConditionTrue,
+			config.Generation,
+			"NotRequired",
+			"pgvector is not required for the current retrieval mode.",
+		)
+	}
+	if config.Spec.Database.DSNSecretRef == "" {
+		return condition(
+			"PGVectorReady",
+			metav1.ConditionFalse,
+			config.Generation,
+			"DSNSecretReferenceMissing",
+			"pgvector readiness cannot be checked until a PostgreSQL DSN Secret reference is configured.",
+		)
+	}
+	return condition(
+		"PGVectorReady",
+		metav1.ConditionUnknown,
+		config.Generation,
+		"RuntimeCheckPending",
+		"pgvector readiness is validated by appserver startup and live smoke tests.",
+	)
+}
+
+func retrievalModeReadyCondition(config *opsmatev1alpha1.OpsMateConfig) metav1.Condition {
+	switch config.Spec.Embedding.RetrievalMode {
+	case "", "bytea":
+		return condition(
+			"RetrievalModeReady",
+			metav1.ConditionTrue,
+			config.Generation,
+			"BYTEAFallback",
+			"Retrieval mode is configured for BYTEA fallback.",
+		)
+	case "pgvector":
+		if config.Spec.Embedding.RequirePGVector {
+			return condition(
+				"RetrievalModeReady",
+				metav1.ConditionTrue,
+				config.Generation,
+				"PGVectorMode",
+				"Retrieval mode is configured for pgvector with pgvector required.",
+			)
+		}
+		return condition(
+			"RetrievalModeReady",
+			metav1.ConditionFalse,
+			config.Generation,
+			"PGVectorNotRequired",
+			"retrievalMode=pgvector requires requirePGVector=true.",
+		)
+	default:
+		return condition(
+			"RetrievalModeReady",
+			metav1.ConditionFalse,
+			config.Generation,
+			"UnsupportedRetrievalMode",
+			"retrievalMode must be bytea or pgvector.",
+		)
+	}
+}
+
+func overallStatus(conditions []metav1.Condition) string {
+	for _, item := range conditions {
+		if item.Status == metav1.ConditionFalse && (item.Type == "PGVectorReady" || item.Type == "RetrievalModeReady") {
+			return "Degraded"
+		}
+	}
+	return "Ready"
 }
 
 func (r *OpsMateConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {

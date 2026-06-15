@@ -7,6 +7,7 @@ import (
 	opsmatev1alpha1 "github.com/JungyuOO/Cywell_OpsMate/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -56,9 +57,45 @@ func TestReconcileCreatesAppserverAndPostgresResources(t *testing.T) {
 	if updated.Status.OverallStatus != "Ready" {
 		t.Fatalf("overall status = %q, want Ready", updated.Status.OverallStatus)
 	}
-	if len(updated.Status.Conditions) != 1 || updated.Status.Conditions[0].Type != "Ready" {
-		t.Fatalf("conditions = %#v, want one Ready condition", updated.Status.Conditions)
+	assertCondition(t, updated.Status.Conditions, "Ready", "True", "ResourcesReconciled")
+	assertCondition(t, updated.Status.Conditions, "PostgresDSNConfigured", "False", "SecretReferenceMissing")
+	assertCondition(t, updated.Status.Conditions, "PGVectorRequired", "False", "NotRequiredBySpec")
+	assertCondition(t, updated.Status.Conditions, "PGVectorMigrationApproved", "False", "ApprovalRequired")
+	assertCondition(t, updated.Status.Conditions, "PGVectorReady", "True", "NotRequired")
+	assertCondition(t, updated.Status.Conditions, "RetrievalModeReady", "True", "BYTEAFallback")
+}
+
+func TestStatusConditionsExposePGVectorConfiguration(t *testing.T) {
+	config := &opsmatev1alpha1.OpsMateConfig{}
+	config.Name = "sample"
+	config.Namespace = "opsmate"
+	config.Spec.Database.DSNSecretRef = "postgres-dsn"
+	config.Spec.Database.PGVectorMigrationApproved = true
+	config.Spec.Embedding.RequirePGVector = true
+	config.Spec.Embedding.RetrievalMode = "pgvector"
+
+	conditions := statusConditions(config)
+
+	if got := overallStatus(conditions); got != "Ready" {
+		t.Fatalf("overall status = %q, want Ready", got)
 	}
+	assertCondition(t, conditions, "PostgresDSNConfigured", "True", "SecretReferenceConfigured")
+	assertCondition(t, conditions, "PGVectorRequired", "True", "RequiredBySpec")
+	assertCondition(t, conditions, "PGVectorMigrationApproved", "True", "ApprovedBySpec")
+	assertCondition(t, conditions, "PGVectorReady", "Unknown", "RuntimeCheckPending")
+	assertCondition(t, conditions, "RetrievalModeReady", "True", "PGVectorMode")
+}
+
+func TestStatusConditionsDegradeInvalidPGVectorMode(t *testing.T) {
+	config := &opsmatev1alpha1.OpsMateConfig{}
+	config.Spec.Embedding.RetrievalMode = "pgvector"
+
+	conditions := statusConditions(config)
+
+	if got := overallStatus(conditions); got != "Degraded" {
+		t.Fatalf("overall status = %q, want Degraded", got)
+	}
+	assertCondition(t, conditions, "RetrievalModeReady", "False", "PGVectorNotRequired")
 }
 
 func TestReconcileSkipsDisabledConsolePlugin(t *testing.T) {
@@ -116,6 +153,23 @@ func assertConsolePluginExists(t *testing.T, ctx context.Context, c client.Clien
 	if err := c.Get(ctx, client.ObjectKey{Name: name}, plugin); err != nil {
 		t.Fatalf("console plugin %s missing: %v", name, err)
 	}
+}
+
+func assertCondition(t *testing.T, conditions []metav1.Condition, conditionType string, status string, reason string) {
+	t.Helper()
+	for _, condition := range conditions {
+		if condition.Type != conditionType {
+			continue
+		}
+		if string(condition.Status) != status {
+			t.Fatalf("%s status = %s, want %s", conditionType, condition.Status, status)
+		}
+		if condition.Reason != reason {
+			t.Fatalf("%s reason = %q, want %q", conditionType, condition.Reason, reason)
+		}
+		return
+	}
+	t.Fatalf("missing condition %s in %#v", conditionType, conditions)
 }
 
 func testScheme(t *testing.T) *runtime.Scheme {
