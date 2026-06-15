@@ -37,8 +37,9 @@ func Deployment(config *opsmatev1alpha1.OpsMateConfig) *appsv1.Deployment {
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:  "appserver",
-							Image: DefaultImage,
+							Name:    "appserver",
+							Image:   DefaultImage,
+							Command: []string{"/appserver"},
 							Ports: []corev1.ContainerPort{
 								{Name: PortName, ContainerPort: Port},
 							},
@@ -92,6 +93,7 @@ func appserverEnv(config *opsmatev1alpha1.OpsMateConfig) []corev1.EnvVar {
 		{Name: "CYOPS_RETRIEVAL_SLOW_THRESHOLD_MS", Value: embeddingRetrievalSlowMillis(config)},
 		{Name: "CYOPS_ADMIN_USERS", Value: strings.Join(config.Spec.Console.AdminUsers, ",")},
 		{Name: "CYOPS_ADMIN_GROUPS", Value: strings.Join(config.Spec.Console.AdminGroups, ",")},
+		{Name: "CYOPS_LISTEN_ADDRESS", Value: fmt.Sprintf(":%d", Port)},
 		{Name: "POSTGRES_SERVICE_HOST", Value: fmt.Sprintf("%s-postgres", config.Name)},
 		{Name: "TLS_CERT_FILE", Value: TLSMountPath + "/tls.crt"},
 		{Name: "TLS_KEY_FILE", Value: TLSMountPath + "/tls.key"},
