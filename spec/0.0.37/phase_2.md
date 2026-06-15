@@ -25,8 +25,8 @@
 
 ## Remaining Scope
 
-- Merge v0.0.37, wait for image/catalog publish, then apply v0.0.37 CatalogSource to CRC and approve the resulting InstallPlan.
+- v0.0.37 CatalogSource was applied after publish, InstallPlan `install-8rnmd` was approved, and CSV `cywell-opsmate.v0.0.37` reached `Succeeded`.
 
 ## Linked Issue
 
-- pending
+- #184

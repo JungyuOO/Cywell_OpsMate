@@ -30,8 +30,8 @@
 | --- | --- | --- | --- |
 | Phase 1 | Confirm v0.0.36 artifacts and CRC readiness | done | workflow/image/cluster evidence |
 | Phase 2 | Fix and publish v0.0.37 graph | done | graph fix and validation evidence |
-| Phase 3 | Verify plugin manifest backend endpoints | planned | appserver and console proxy evidence |
-| Phase 4 | Handoff | planned | next-version scope |
+| Phase 3 | Verify plugin manifest backend endpoints | done | appserver and console proxy evidence |
+| Phase 4 | Handoff | done | v0.0.38 scope |
 
 ## 5. Migration Or Operation Strategy
 
@@ -61,8 +61,8 @@
 
 - [x] v0.0.36 artifacts are confirmed.
 - [x] v0.0.37 graph fix is prepared and locally validated.
-- [ ] CRC OLM upgrade reaches `cywell-opsmate.v0.0.37` `Succeeded`.
-- [ ] Manager and appserver deployments run v0.0.37 images.
-- [ ] Plugin manifest and entry endpoints return expected CYOps content.
-- [ ] Browser/proxy smoke result or blocker is documented.
-- [ ] Remaining launcher/chat drawer scope is assigned to the next version.
+- [x] CRC OLM upgrade reaches `cywell-opsmate.v0.0.37` `Succeeded`.
+- [x] Manager and appserver deployments run v0.0.37 images.
+- [x] Plugin manifest and entry endpoints return expected CYOps content.
+- [x] Browser/proxy smoke result or blocker is documented.
+- [x] Remaining launcher/chat drawer scope is assigned to the next version.
