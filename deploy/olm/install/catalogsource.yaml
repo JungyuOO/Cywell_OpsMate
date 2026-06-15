@@ -1,0 +1,10 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: cywell-opsmate-catalog
+  namespace: openshift-marketplace
+spec:
+  sourceType: grpc
+  image: ghcr.io/jungyuoo/cywell-opsmate-catalog:v0.0.30
+  displayName: CYOps Catalog
+  publisher: Cywell

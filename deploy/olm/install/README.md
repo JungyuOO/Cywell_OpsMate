@@ -6,13 +6,16 @@ This directory describes the intended customer-facing install path.
 
    `ghcr.io/jungyuoo/cywell-opsmate-bundle:v0.0.29`
 
-2. Build and publish a catalog image from the bundle.
+2. Publish the catalog image:
+
+   `ghcr.io/jungyuoo/cywell-opsmate-catalog:v0.0.30`
 
 3. Create a `CatalogSource` named `cywell-opsmate-catalog` in `openshift-marketplace`.
 
 4. Apply:
 
    ```powershell
+   oc apply -f deploy/olm/install/catalogsource.yaml
    oc apply -f deploy/olm/install/namespace.yaml
    oc apply -f deploy/olm/install/operatorgroup.yaml
    oc apply -f deploy/olm/install/subscription.yaml
