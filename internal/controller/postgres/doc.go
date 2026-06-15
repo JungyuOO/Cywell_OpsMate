@@ -14,7 +14,7 @@ import (
 const (
 	DefaultImage   = "postgres:16-alpine"
 	PGVectorImage  = "pgvector/pgvector:pg16"
-	MigrationImage = "ghcr.io/jungyuoo/cywell-opsmate-appserver:v0.0.27"
+	MigrationImage = "ghcr.io/jungyuoo/cywell-opsmate-appserver:v0.0.36"
 	PortName       = "postgres"
 	Port           = int32(5432)
 	DefaultDBName  = "opsmate"

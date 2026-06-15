@@ -5,6 +5,6 @@ metadata:
   namespace: openshift-marketplace
 spec:
   sourceType: grpc
-  image: ghcr.io/jungyuoo/cywell-opsmate-catalog:v0.0.34
+  image: ghcr.io/jungyuoo/cywell-opsmate-catalog:v0.0.36
   displayName: CYOps Catalog
   publisher: Cywell
