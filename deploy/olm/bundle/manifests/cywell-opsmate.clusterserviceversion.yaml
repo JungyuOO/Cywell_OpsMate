@@ -141,6 +141,17 @@ spec:
           - update
           - patch
         - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - create
+          - get
+          - update
+      clusterPermissions:
+      - serviceAccountName: cywell-opsmate-controller-manager
+        rules:
+        - apiGroups:
           - console.openshift.io
           resources:
           - consoleplugins
@@ -151,14 +162,6 @@ spec:
           - create
           - update
           - patch
-        - apiGroups:
-          - coordination.k8s.io
-          resources:
-          - leases
-          verbs:
-          - create
-          - get
-          - update
       deployments:
       - name: cywell-opsmate-controller-manager
         spec:
