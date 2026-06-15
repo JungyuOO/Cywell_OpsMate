@@ -1,0 +1,8 @@
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: cywell-opsmate
+  namespace: cywell-opsmate-olm
+spec:
+  targetNamespaces:
+  - cywell-opsmate-olm

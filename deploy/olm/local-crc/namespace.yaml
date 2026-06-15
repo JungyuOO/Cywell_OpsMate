@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cywell-opsmate-olm
+  labels:
+    app.kubernetes.io/name: cywell-opsmate
+    cyops.cywell.io/install-mode: local-crc-olm

@@ -1,0 +1,6 @@
+resources:
+- namespace.yaml
+- operatorgroup.yaml
+- postgres-secret.yaml
+- subscription.yaml
+- opsmateconfig.yaml

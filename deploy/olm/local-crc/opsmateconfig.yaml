@@ -1,0 +1,24 @@
+apiVersion: opsmate.cywell.io/v1alpha1
+kind: OpsMateConfig
+metadata:
+  name: cyops
+  namespace: cywell-opsmate-olm
+spec:
+  lightspeed:
+    apiBaseURL: https://lightspeed.example.com
+    defaultProvider: lightspeed
+  database:
+    type: postgres
+    sharedBuffers: 128MB
+    maxConnections: 50
+  embedding:
+    retrievalMode: bytea
+    requirePGVector: false
+  console:
+    enabled: true
+    displayName: CYOps
+    adminUsers:
+    - admin
+    adminAuthProxyEnabled: false
+  aiops:
+    enabled: false

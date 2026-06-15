@@ -4,11 +4,11 @@ This directory describes the intended customer-facing install path.
 
 1. Publish the bundle image:
 
-   `ghcr.io/jungyuoo/cywell-opsmate-bundle:v0.0.29`
+   `ghcr.io/jungyuoo/cywell-opsmate-bundle:v0.0.31`
 
 2. Publish the catalog image:
 
-   `ghcr.io/jungyuoo/cywell-opsmate-catalog:v0.0.30`
+   `ghcr.io/jungyuoo/cywell-opsmate-catalog:v0.0.31`
 
 3. Create a `CatalogSource` named `cywell-opsmate-catalog` in `openshift-marketplace`.
 
@@ -22,3 +22,7 @@ This directory describes the intended customer-facing install path.
    ```
 
 The direct `config/default` apply path remains a development bootstrap path only.
+
+For CRC/local validation, prefer `deploy/olm/local-crc`. It installs the
+Subscription into `cywell-opsmate-olm` so the OLM path can be tested without
+removing or mutating the direct-bootstrap namespace.
