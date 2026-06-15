@@ -92,6 +92,8 @@ spec:
                     type: string
                   dsnSecretKey:
                     type: string
+                  pgVectorMigrationApproved:
+                    type: boolean
                   sharedBuffers:
                     type: string
                   maxConnections:

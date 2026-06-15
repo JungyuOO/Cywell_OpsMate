@@ -41,12 +41,13 @@ type EmbeddingSpec struct {
 }
 
 type DatabaseSpec struct {
-	Type           string `json:"type,omitempty"`
-	Image          string `json:"image,omitempty"`
-	DSNSecretRef   string `json:"dsnSecretRef,omitempty"`
-	DSNSecretKey   string `json:"dsnSecretKey,omitempty"`
-	SharedBuffers  string `json:"sharedBuffers,omitempty"`
-	MaxConnections int    `json:"maxConnections,omitempty"`
+	Type                      string `json:"type,omitempty"`
+	Image                     string `json:"image,omitempty"`
+	DSNSecretRef              string `json:"dsnSecretRef,omitempty"`
+	DSNSecretKey              string `json:"dsnSecretKey,omitempty"`
+	PGVectorMigrationApproved bool   `json:"pgVectorMigrationApproved,omitempty"`
+	SharedBuffers             string `json:"sharedBuffers,omitempty"`
+	MaxConnections            int    `json:"maxConnections,omitempty"`
 }
 
 type ConsoleSpec struct {
