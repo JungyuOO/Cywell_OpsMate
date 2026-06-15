@@ -9,13 +9,14 @@ import (
 )
 
 type Server struct {
-	mux       *http.ServeMux
-	provider  ChatProvider
-	documents DocumentRepository
-	storage   DocumentStorage
-	retriever Retriever
-	metrics   *RetrievalMetrics
-	embedder  EmbeddingProvider
+	mux        *http.ServeMux
+	provider   ChatProvider
+	documents  DocumentRepository
+	storage    DocumentStorage
+	retriever  Retriever
+	metrics    *RetrievalMetrics
+	embedder   EmbeddingProvider
+	adminToken string
 }
 
 func NewServer() *Server {
@@ -30,12 +31,13 @@ func NewServerWithDependencies(provider ChatProvider, documents DocumentReposito
 }
 
 type ServerOptions struct {
-	Provider  ChatProvider
-	Documents DocumentRepository
-	Storage   DocumentStorage
-	Retriever Retriever
-	Metrics   *RetrievalMetrics
-	Embedder  EmbeddingProvider
+	Provider   ChatProvider
+	Documents  DocumentRepository
+	Storage    DocumentStorage
+	Retriever  Retriever
+	Metrics    *RetrievalMetrics
+	Embedder   EmbeddingProvider
+	AdminToken string
 }
 
 func NewServerWithOptions(options ServerOptions) *Server {
@@ -52,13 +54,14 @@ func NewServerWithOptions(options ServerOptions) *Server {
 		metrics = NewRetrievalMetrics()
 	}
 	server := &Server{
-		mux:       http.NewServeMux(),
-		provider:  provider,
-		documents: documents,
-		storage:   options.Storage,
-		retriever: options.Retriever,
-		metrics:   metrics,
-		embedder:  options.Embedder,
+		mux:        http.NewServeMux(),
+		provider:   provider,
+		documents:  documents,
+		storage:    options.Storage,
+		retriever:  options.Retriever,
+		metrics:    metrics,
+		embedder:   options.Embedder,
+		adminToken: strings.TrimSpace(options.AdminToken),
 	}
 	server.mux.HandleFunc("/healthz", server.healthz)
 	server.mux.HandleFunc("/api/ops/retrieval-metrics", server.retrievalMetrics)
@@ -72,6 +75,10 @@ func NewServerWithOptions(options ServerOptions) *Server {
 func (s *Server) reembedReadyDocuments(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	if !s.authorizeAdmin(r) {
+		writeError(w, http.StatusForbidden, "admin authorization required")
 		return
 	}
 	repository, ok := s.documents.(*PostgresDocumentRepository)
@@ -98,6 +105,13 @@ func (s *Server) reembedReadyDocuments(w http.ResponseWriter, r *http.Request) {
 		Processed: result.Processed,
 		Failed:    result.Failed,
 	})
+}
+
+func (s *Server) authorizeAdmin(r *http.Request) bool {
+	if s.adminToken == "" {
+		return false
+	}
+	return r.Header.Get("X-CYOps-Admin-Token") == s.adminToken
 }
 
 func (s *Server) retrievalMetrics(w http.ResponseWriter, r *http.Request) {

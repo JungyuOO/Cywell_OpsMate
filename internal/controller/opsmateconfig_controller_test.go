@@ -62,6 +62,7 @@ func TestReconcileCreatesAppserverAndPostgresResources(t *testing.T) {
 	assertCondition(t, updated.Status.Conditions, "PGVectorRequired", "False", "NotRequiredBySpec")
 	assertCondition(t, updated.Status.Conditions, "PGVectorMigrationApproved", "False", "ApprovalRequired")
 	assertCondition(t, updated.Status.Conditions, "PGVectorReady", "True", "NotRequired")
+	assertCondition(t, updated.Status.Conditions, "ReembeddingReady", "True", "ReembeddingIdle")
 	assertCondition(t, updated.Status.Conditions, "RetrievalModeReady", "True", "BYTEAFallback")
 }
 
@@ -73,6 +74,7 @@ func TestStatusConditionsExposePGVectorConfiguration(t *testing.T) {
 	config.Spec.Database.PGVectorMigrationApproved = true
 	config.Spec.Embedding.RequirePGVector = true
 	config.Spec.Embedding.RetrievalMode = "pgvector"
+	config.Status.PGVectorReady = true
 
 	conditions := statusConditions(config)
 
@@ -82,8 +84,20 @@ func TestStatusConditionsExposePGVectorConfiguration(t *testing.T) {
 	assertCondition(t, conditions, "PostgresDSNConfigured", "True", "SecretReferenceConfigured")
 	assertCondition(t, conditions, "PGVectorRequired", "True", "RequiredBySpec")
 	assertCondition(t, conditions, "PGVectorMigrationApproved", "True", "ApprovedBySpec")
-	assertCondition(t, conditions, "PGVectorReady", "Unknown", "RuntimeCheckPending")
+	assertCondition(t, conditions, "PGVectorReady", "True", "RuntimeCheckPassed")
 	assertCondition(t, conditions, "RetrievalModeReady", "True", "PGVectorMode")
+}
+
+func TestStatusConditionsDegradeFailedReembedding(t *testing.T) {
+	config := &opsmatev1alpha1.OpsMateConfig{}
+	config.Status.Reembedding.Failed = 1
+
+	conditions := statusConditions(config)
+
+	if got := overallStatus(conditions); got != "Degraded" {
+		t.Fatalf("overall status = %q, want Degraded", got)
+	}
+	assertCondition(t, conditions, "ReembeddingReady", "False", "ReembeddingFailed")
 }
 
 func TestStatusConditionsDegradeInvalidPGVectorMode(t *testing.T) {

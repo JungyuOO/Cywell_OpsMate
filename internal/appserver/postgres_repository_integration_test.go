@@ -408,10 +408,12 @@ func TestPostgresReembeddingEndpointReturnsCounts(t *testing.T) {
 	}
 
 	server := NewServerWithOptions(ServerOptions{
-		Documents: repository,
-		Embedder:  DeterministicEmbeddingProvider{Dimensions: 8},
+		Documents:  repository,
+		Embedder:   DeterministicEmbeddingProvider{Dimensions: 8},
+		AdminToken: "admin-token",
 	})
 	request := httptest.NewRequest(http.MethodPost, "/api/ops/reembed", strings.NewReader(`{"limit":10}`))
+	request.Header.Set("X-CYOps-Admin-Token", "admin-token")
 	recorder := httptest.NewRecorder()
 
 	server.ServeHTTP(recorder, request)
