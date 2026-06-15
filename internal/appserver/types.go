@@ -73,6 +73,35 @@ type ReembeddingAPIResponse struct {
 	Failed    int `json:"failed"`
 }
 
+type DiagnosticsResponse struct {
+	Retrieval        RetrievalMetricsSnapshot `json:"retrieval"`
+	Documents        DocumentDiagnostics      `json:"documents"`
+	Admin            AdminDiagnostics         `json:"admin"`
+	Reembedding      ReembeddingDiagnostics   `json:"reembedding"`
+	DiagnosticsLinks DiagnosticsLinks         `json:"diagnosticsLinks"`
+}
+
+type DocumentDiagnostics struct {
+	Total             int            `json:"total"`
+	ByStatus          map[string]int `json:"byStatus"`
+	ByEmbeddingStatus map[string]int `json:"byEmbeddingStatus"`
+}
+
+type AdminDiagnostics struct {
+	AuthorizedUser   string   `json:"authorizedUser,omitempty"`
+	AuthorizedGroups []string `json:"authorizedGroups,omitempty"`
+}
+
+type ReembeddingDiagnostics struct {
+	Available bool `json:"available"`
+}
+
+type DiagnosticsLinks struct {
+	RetrievalMetrics string `json:"retrievalMetrics"`
+	Reembed          string `json:"reembed"`
+	Documents        string `json:"documents"`
+}
+
 type ProviderRequest struct {
 	Message        string
 	Context        []ProviderContext
