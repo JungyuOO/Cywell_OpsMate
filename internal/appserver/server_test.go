@@ -144,6 +144,58 @@ func TestConsoleDiagnosticsViewUsesConsoleBackendPath(t *testing.T) {
 	}
 }
 
+func TestConsolePluginManifestIsServed(t *testing.T) {
+	server := NewServer()
+	request := httptest.NewRequest(http.MethodGet, "/plugin-manifest.json", nil)
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	if contentType := recorder.Header().Get("Content-Type"); contentType != "application/json" {
+		t.Fatalf("content type = %q, want application/json", contentType)
+	}
+	body := recorder.Body.String()
+	for _, want := range []string{
+		`"name": "cyops-console"`,
+		`"version": "0.0.36"`,
+		`"displayName": "CYOps"`,
+		`"console.navigation/href"`,
+		`"/console-plugin/diagnostics"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("body = %q, want %q", body, want)
+		}
+	}
+}
+
+func TestConsolePluginEntryIsServed(t *testing.T) {
+	server := NewServer()
+	request := httptest.NewRequest(http.MethodGet, "/console-plugin/plugin-entry.js", nil)
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	if contentType := recorder.Header().Get("Content-Type"); contentType != "text/javascript; charset=utf-8" {
+		t.Fatalf("content type = %q, want text/javascript", contentType)
+	}
+	body := recorder.Body.String()
+	for _, want := range []string{
+		`cyops-console`,
+		`0.0.36`,
+		`/console-plugin/diagnostics`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("body = %q, want %q", body, want)
+		}
+	}
+}
+
 func TestConsoleDiagnosticsScriptCallsDiagnosticsAPIs(t *testing.T) {
 	server := NewServer()
 	request := httptest.NewRequest(http.MethodGet, "/console-plugin/diagnostics.js", nil)

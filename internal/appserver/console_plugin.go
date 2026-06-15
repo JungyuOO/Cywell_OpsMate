@@ -2,6 +2,34 @@ package appserver
 
 import "net/http"
 
+const consolePluginManifestJSON = `{
+  "name": "cyops-console",
+  "version": "0.0.36",
+  "displayName": "CYOps",
+  "description": "CYOps OpenShift operational assistant plugin.",
+  "dependencies": {
+    "@console/pluginAPI": "*"
+  },
+  "extensions": [
+    {
+      "type": "console.navigation/href",
+      "properties": {
+        "id": "cyops-diagnostics",
+        "name": "CYOps Diagnostics",
+        "href": "/console-plugin/diagnostics",
+        "section": "cyops",
+        "perspective": "admin"
+      }
+    }
+  ]
+}`
+
+const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
+  name: "cyops-console",
+  version: "0.0.36",
+  diagnosticsPath: "/console-plugin/diagnostics"
+};`
+
 const consoleDiagnosticsHTML = `<!doctype html>
 <html lang="en">
 <head>
@@ -199,6 +227,26 @@ refreshButton.addEventListener("click", () => {
 });
 
 loadDiagnostics().catch((error) => setStatus(error.message));`
+
+func (s *Server) consolePluginManifest(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(consolePluginManifestJSON))
+}
+
+func (s *Server) consolePluginEntry(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(consolePluginEntryJS))
+}
 
 func (s *Server) consoleDiagnostics(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
