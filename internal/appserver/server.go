@@ -71,6 +71,7 @@ func NewServerWithOptions(options ServerOptions) *Server {
 		adminAuth: normalizeAdminAuth(options),
 	}
 	server.mux.HandleFunc("/healthz", server.healthz)
+	server.mux.HandleFunc("/api/ops/diagnostics", server.diagnostics)
 	server.mux.HandleFunc("/api/ops/retrieval-metrics", server.retrievalMetrics)
 	server.mux.HandleFunc("/api/ops/reembed", server.reembedReadyDocuments)
 	server.mux.HandleFunc("/api/chat", server.chat)
@@ -130,6 +131,28 @@ func (s *Server) retrievalMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, s.metrics.Snapshot())
+}
+
+func (s *Server) diagnostics(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	if !s.authorizeAdmin(r) {
+		writeError(w, http.StatusForbidden, "admin authorization required")
+		return
+	}
+	writeJSON(w, http.StatusOK, DiagnosticsResponse{
+		Retrieval:   s.metrics.Snapshot(),
+		Documents:   documentDiagnostics(s.documents.List()),
+		Admin:       adminDiagnostics(r),
+		Reembedding: ReembeddingDiagnostics{Available: isPostgresRepository(s.documents)},
+		DiagnosticsLinks: DiagnosticsLinks{
+			RetrievalMetrics: "/api/ops/retrieval-metrics",
+			Reembed:          "/api/ops/reembed",
+			Documents:        "/api/documents",
+		},
+	})
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -381,4 +404,29 @@ func intersectsCSV(values []string, csv string) bool {
 		}
 	}
 	return false
+}
+
+func documentDiagnostics(documents []Document) DocumentDiagnostics {
+	result := DocumentDiagnostics{
+		Total:             len(documents),
+		ByStatus:          map[string]int{},
+		ByEmbeddingStatus: map[string]int{},
+	}
+	for _, document := range documents {
+		result.ByStatus[document.Status]++
+		result.ByEmbeddingStatus[document.EmbeddingStatus]++
+	}
+	return result
+}
+
+func adminDiagnostics(r *http.Request) AdminDiagnostics {
+	return AdminDiagnostics{
+		AuthorizedUser:   strings.TrimSpace(r.Header.Get("X-Forwarded-User")),
+		AuthorizedGroups: trimStrings(strings.Split(r.Header.Get("X-Forwarded-Groups"), ",")),
+	}
+}
+
+func isPostgresRepository(documents DocumentRepository) bool {
+	_, ok := documents.(*PostgresDocumentRepository)
+	return ok
 }

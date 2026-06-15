@@ -70,6 +70,60 @@ func TestRetrievalMetricsEndpointReturnsSnapshot(t *testing.T) {
 	}
 }
 
+func TestDiagnosticsEndpointRequiresAdmin(t *testing.T) {
+	server := NewServerWithOptions(ServerOptions{
+		AdminAuth: AdminAuthConfig{Users: []string{"admin"}},
+	})
+	request := httptest.NewRequest(http.MethodGet, "/api/ops/diagnostics", nil)
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusForbidden)
+	}
+}
+
+func TestDiagnosticsEndpointReturnsSecretFreeOperationalSummary(t *testing.T) {
+	metrics := NewRetrievalMetrics()
+	metrics.ObserveRetrieval(RetrievalObservation{Mode: "pgvector", ResultCount: 3})
+	repository := NewMemoryDocumentRepository()
+	repository.Create("runbook.md", 12, "admin")
+	server := NewServerWithOptions(ServerOptions{
+		Documents: repository,
+		Metrics:   metrics,
+		AdminAuth: AdminAuthConfig{Groups: []string{"cyops-admins"}},
+	})
+	request := httptest.NewRequest(http.MethodGet, "/api/ops/diagnostics", nil)
+	request.Header.Set("X-Forwarded-User", "admin")
+	request.Header.Set("X-Forwarded-Groups", "system:authenticated, cyops-admins")
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	body := recorder.Body.String()
+	for _, want := range []string{
+		`"retrieval":{"total":1`,
+		`"documents":{"total":1`,
+		`"byStatus":{"uploaded":1}`,
+		`"byEmbeddingStatus":{"pending":1}`,
+		`"authorizedUser":"admin"`,
+		`"authorizedGroups":["system:authenticated","cyops-admins"]`,
+		`"available":false`,
+		`"retrievalMetrics":"/api/ops/retrieval-metrics"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("body = %q, want %q", body, want)
+		}
+	}
+	if strings.Contains(strings.ToLower(body), "token") || strings.Contains(strings.ToLower(body), "dsn") {
+		t.Fatalf("body = %q, want no token or dsn fields", body)
+	}
+}
+
 func TestReembedEndpointRequiresPostgresRepository(t *testing.T) {
 	server := NewServerWithOptions(ServerOptions{AdminToken: "admin-token"})
 	request := httptest.NewRequest(http.MethodPost, "/api/ops/reembed", strings.NewReader(`{"limit":1}`))
