@@ -1,0 +1,11 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: cywell-opsmate
+  namespace: cywell-opsmate-system
+spec:
+  channel: alpha
+  installPlanApproval: Manual
+  name: cywell-opsmate
+  source: cywell-opsmate-catalog
+  sourceNamespace: openshift-marketplace
