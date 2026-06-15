@@ -71,6 +71,9 @@ func NewServerWithOptions(options ServerOptions) *Server {
 		adminAuth: normalizeAdminAuth(options),
 	}
 	server.mux.HandleFunc("/healthz", server.healthz)
+	server.mux.HandleFunc("/console-plugin/diagnostics", server.consoleDiagnostics)
+	server.mux.HandleFunc("/console-plugin/diagnostics.js", server.consoleDiagnosticsJS)
+	server.mux.HandleFunc("/console-plugin/diagnostics.css", server.consoleDiagnosticsCSS)
 	server.mux.HandleFunc("/api/ops/diagnostics", server.diagnostics)
 	server.mux.HandleFunc("/api/ops/diagnostics/schema", server.diagnosticsSchema)
 	server.mux.HandleFunc("/api/ops/retrieval-metrics", server.retrievalMetrics)
