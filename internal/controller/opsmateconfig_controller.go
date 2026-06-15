@@ -346,6 +346,7 @@ func (r *OpsMateConfigReconciler) reconcileObject(ctx context.Context, desired c
 		current.Namespace = key.Namespace
 		_, err := controllerutil.CreateOrUpdate(ctx, r.Client, current, func() error {
 			current.ObjectMeta.Labels = desiredObject.ObjectMeta.Labels
+			current.ObjectMeta.Annotations = desiredObject.ObjectMeta.Annotations
 			current.ObjectMeta.OwnerReferences = desiredObject.ObjectMeta.OwnerReferences
 			current.Spec.Selector = desiredObject.Spec.Selector
 			current.Spec.Ports = desiredObject.Spec.Ports

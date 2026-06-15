@@ -22,11 +22,24 @@ func TestDeploymentBuildsPostgresShape(t *testing.T) {
 		t.Fatalf("image = %q, want custom pgvector image", container.Image)
 	}
 	assertEnv(t, container.Env, "POSTGRES_DB", DefaultDBName)
+	assertEnv(t, container.Env, "PGDATA", PGDataPath)
 	assertEnv(t, container.Env, "POSTGRES_SHARED_BUFFERS", "128MB")
 	assertEnv(t, container.Env, "POSTGRES_MAX_CONNECTIONS", "100")
 	assertSecretEnv(t, container.Env, "POSTGRES_PASSWORD", "sample-postgres-credentials", "password")
 	if container.Ports[0].ContainerPort != Port {
 		t.Fatalf("container port = %d, want %d", container.Ports[0].ContainerPort, Port)
+	}
+	if container.VolumeMounts[0].MountPath != DataMountPath {
+		t.Fatalf("data mount = %q, want %q", container.VolumeMounts[0].MountPath, DataMountPath)
+	}
+	if container.VolumeMounts[1].MountPath != RunMountPath {
+		t.Fatalf("run mount = %q, want %q", container.VolumeMounts[1].MountPath, RunMountPath)
+	}
+	if deployment.Spec.Template.Spec.Volumes[0].EmptyDir == nil {
+		t.Fatal("postgres data volume is not emptyDir")
+	}
+	if container.SecurityContext == nil || container.SecurityContext.AllowPrivilegeEscalation == nil || *container.SecurityContext.AllowPrivilegeEscalation {
+		t.Fatal("postgres container should disallow privilege escalation")
 	}
 }
 
