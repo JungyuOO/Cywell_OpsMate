@@ -166,6 +166,27 @@ func PGVectorMigrationJobName(config *opsmatev1alpha1.OpsMateConfig) string {
 	return fmt.Sprintf("%s-pgvector-migration", config.Name)
 }
 
+func ApplyPGVectorMigrationJobStatus(config *opsmatev1alpha1.OpsMateConfig, job *batchv1.Job) {
+	if job == nil {
+		return
+	}
+	for _, condition := range job.Status.Conditions {
+		switch condition.Type {
+		case batchv1.JobComplete:
+			if condition.Status == corev1.ConditionTrue {
+				config.Status.PGVectorReady = true
+				config.Status.PGVectorLastError = ""
+				return
+			}
+		case batchv1.JobFailed:
+			if condition.Status == corev1.ConditionTrue {
+				config.Status.PGVectorReady = false
+				config.Status.PGVectorLastError = "pgvector migration job failed"
+			}
+		}
+	}
+}
+
 func labelsFor(config *opsmatev1alpha1.OpsMateConfig) map[string]string {
 	return map[string]string{
 		"app.kubernetes.io/name":       "cywell-opsmate",

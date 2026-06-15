@@ -106,6 +106,14 @@ spec:
                     type: string
                   adminTokenSecretRef:
                     type: string
+                  adminUsers:
+                    type: array
+                    items:
+                      type: string
+                  adminGroups:
+                    type: array
+                    items:
+                      type: string
                   enabled:
                     type: boolean
                   displayName:
@@ -115,6 +123,8 @@ spec:
             properties:
               pgVectorReady:
                 type: boolean
+              pgVectorLastError:
+                type: string
               reembedding:
                 type: object
                 properties:

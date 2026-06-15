@@ -98,6 +98,36 @@ func TestReembedEndpointRequiresAdminToken(t *testing.T) {
 	}
 }
 
+func TestReembedEndpointAllowsForwardedAdminUser(t *testing.T) {
+	server := NewServerWithOptions(ServerOptions{
+		AdminAuth: AdminAuthConfig{Users: []string{"cluster-admin"}},
+	})
+	request := httptest.NewRequest(http.MethodPost, "/api/ops/reembed", strings.NewReader(`{"limit":1}`))
+	request.Header.Set("X-Forwarded-User", "cluster-admin")
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusConflict, recorder.Body.String())
+	}
+}
+
+func TestReembedEndpointAllowsForwardedAdminGroup(t *testing.T) {
+	server := NewServerWithOptions(ServerOptions{
+		AdminAuth: AdminAuthConfig{Groups: []string{"cyops-admins"}},
+	})
+	request := httptest.NewRequest(http.MethodPost, "/api/ops/reembed", strings.NewReader(`{"limit":1}`))
+	request.Header.Set("X-Forwarded-Groups", "system:authenticated, cyops-admins")
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusConflict, recorder.Body.String())
+	}
+}
+
 func TestChatRoutesToProvider(t *testing.T) {
 	server := NewServer()
 	request := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"message":"Why is this pod not ready?","provider":"lightspeed"}`))

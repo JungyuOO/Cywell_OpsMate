@@ -188,6 +188,15 @@ func pgVectorReadyCondition(config *opsmatev1alpha1.OpsMateConfig) metav1.Condit
 			"pgvector runtime validation has passed.",
 		)
 	}
+	if config.Status.PGVectorLastError != "" {
+		return condition(
+			"PGVectorReady",
+			metav1.ConditionFalse,
+			config.Generation,
+			"RuntimeCheckFailed",
+			config.Status.PGVectorLastError,
+		)
+	}
 	return condition(
 		"PGVectorReady",
 		metav1.ConditionUnknown,

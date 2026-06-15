@@ -2,6 +2,7 @@ package appserver
 
 import (
 	"fmt"
+	"strings"
 
 	opsmatev1alpha1 "github.com/JungyuOO/Cywell_OpsMate/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -89,6 +90,8 @@ func appserverEnv(config *opsmatev1alpha1.OpsMateConfig) []corev1.EnvVar {
 		{Name: "CYOPS_PGVECTOR_REQUIRED", Value: embeddingPGVectorRequired(config)},
 		{Name: "CYOPS_RETRIEVAL_MODE", Value: embeddingRetrievalMode(config)},
 		{Name: "CYOPS_RETRIEVAL_SLOW_THRESHOLD_MS", Value: embeddingRetrievalSlowMillis(config)},
+		{Name: "CYOPS_ADMIN_USERS", Value: strings.Join(config.Spec.Console.AdminUsers, ",")},
+		{Name: "CYOPS_ADMIN_GROUPS", Value: strings.Join(config.Spec.Console.AdminGroups, ",")},
 		{Name: "POSTGRES_SERVICE_HOST", Value: fmt.Sprintf("%s-postgres", config.Name)},
 		{Name: "TLS_CERT_FILE", Value: TLSMountPath + "/tls.crt"},
 		{Name: "TLS_KEY_FILE", Value: TLSMountPath + "/tls.key"},

@@ -51,17 +51,20 @@ type DatabaseSpec struct {
 }
 
 type ConsoleSpec struct {
-	Enabled             bool   `json:"enabled,omitempty"`
-	DisplayName         string `json:"displayName,omitempty"`
-	AdminTokenSecretRef string `json:"adminTokenSecretRef,omitempty"`
-	AdminTokenSecretKey string `json:"adminTokenSecretKey,omitempty"`
+	Enabled             bool     `json:"enabled,omitempty"`
+	DisplayName         string   `json:"displayName,omitempty"`
+	AdminTokenSecretRef string   `json:"adminTokenSecretRef,omitempty"`
+	AdminTokenSecretKey string   `json:"adminTokenSecretKey,omitempty"`
+	AdminUsers          []string `json:"adminUsers,omitempty"`
+	AdminGroups         []string `json:"adminGroups,omitempty"`
 }
 
 type OpsMateConfigStatus struct {
-	OverallStatus string             `json:"overallStatus,omitempty"`
-	PGVectorReady bool               `json:"pgVectorReady,omitempty"`
-	Reembedding   ReembeddingStatus  `json:"reembedding,omitempty"`
-	Conditions    []metav1.Condition `json:"conditions,omitempty"`
+	OverallStatus     string             `json:"overallStatus,omitempty"`
+	PGVectorReady     bool               `json:"pgVectorReady,omitempty"`
+	PGVectorLastError string             `json:"pgVectorLastError,omitempty"`
+	Reembedding       ReembeddingStatus  `json:"reembedding,omitempty"`
+	Conditions        []metav1.Condition `json:"conditions,omitempty"`
 }
 
 type ReembeddingStatus struct {
