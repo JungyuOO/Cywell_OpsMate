@@ -4,7 +4,7 @@ import "net/http"
 
 const consolePluginManifestJSON = `{
   "name": "cyops-console",
-  "version": "0.0.36",
+  "version": "0.0.37",
   "displayName": "CYOps",
   "description": "CYOps OpenShift operational assistant plugin.",
   "dependencies": {
@@ -26,7 +26,7 @@ const consolePluginManifestJSON = `{
 
 const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   name: "cyops-console",
-  version: "0.0.36",
+  version: "0.0.37",
   diagnosticsPath: "/console-plugin/diagnostics"
 };`
 
