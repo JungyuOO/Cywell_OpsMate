@@ -6,6 +6,7 @@ param(
     [string]$AdminRouteHost = "",
     [string]$AdminGroup = "cyops-admins",
     [string]$ManifestPath = "config/samples/opsmate_v1alpha1_opsmateconfig.yaml",
+    [switch]$EnableFallbackRoute,
     [switch]$SkipApply
 )
 
@@ -67,32 +68,40 @@ if (-not $SkipApply) {
     Invoke-Oc apply -n $Namespace -f $ManifestPath
 }
 
-if ($AdminRouteHost -ne "") {
-    Write-Host "Patching admin Route host: $AdminRouteHost"
-    Invoke-Oc -n $Namespace patch opsmateconfig $Name --type merge -p "{`"spec`":{`"console`":{`"adminRouteHost`":`"$AdminRouteHost`",`"adminGroups`":[`"$AdminGroup`"],`"adminAuthProxyEnabled`":true,`"adminAuthProxyCookieSecretRef`":`"$CookieSecretName`"}}}"
+if ($EnableFallbackRoute) {
+    Write-Host "Enabling fallback admin Route"
+    if ($AdminRouteHost -ne "") {
+        Invoke-Oc -n $Namespace patch opsmateconfig $Name --type merge -p "{`"spec`":{`"console`":{`"adminRouteHost`":`"$AdminRouteHost`",`"adminGroups`":[`"$AdminGroup`"],`"adminAuthProxyEnabled`":true,`"adminAuthProxyCookieSecretRef`":`"$CookieSecretName`"}}}"
+    } else {
+        Invoke-Oc -n $Namespace patch opsmateconfig $Name --type merge -p "{`"spec`":{`"console`":{`"adminGroups`":[`"$AdminGroup`"],`"adminAuthProxyEnabled`":true,`"adminAuthProxyCookieSecretRef`":`"$CookieSecretName`"}}}"
+    }
 }
 
 $routeName = "$Name-admin-authproxy"
 $jobName = "$Name-pgvector-migration"
 
-Write-Host "Waiting for admin auth proxy Route"
-Invoke-Oc -n $Namespace wait "--for=jsonpath={.spec.to.name}=$routeName" "route/$routeName" --timeout=120s
-$host = (& oc -n $Namespace get route $routeName -o jsonpath="{.spec.host}")
-if ($LASTEXITCODE -ne 0 -or $host -eq "") {
-    throw "could not resolve admin auth proxy Route host"
-}
-Write-Host "Admin Route: https://$host"
+if ($EnableFallbackRoute) {
+    Write-Host "Waiting for fallback admin auth proxy Route"
+    Invoke-Oc -n $Namespace wait "--for=jsonpath={.spec.to.name}=$routeName" "route/$routeName" --timeout=120s
+    $host = (& oc -n $Namespace get route $routeName -o jsonpath="{.spec.host}")
+    if ($LASTEXITCODE -ne 0 -or $host -eq "") {
+        throw "could not resolve fallback admin auth proxy Route host"
+    }
+    Write-Host "Fallback admin Route: https://$host"
 
-Write-Host "Checking admin Route redirects to OpenShift OAuth"
-$response = & curl.exe -k -I -s "https://$host/api/ops/diagnostics"
-if ($LASTEXITCODE -ne 0) {
-    throw "curl against admin Route failed"
+    Write-Host "Checking fallback admin Route redirects to OpenShift OAuth"
+    $response = & curl.exe -k -I -s "https://$host/api/ops/diagnostics"
+    if ($LASTEXITCODE -ne 0) {
+        throw "curl against fallback admin Route failed"
+    }
+    $responseText = $response -join "`n"
+    if ($responseText -notmatch "HTTP/.* 30[12378]" -and $responseText -notmatch "oauth") {
+        throw "fallback admin Route did not look like an OAuth-protected redirect"
+    }
+    Assert-NoSecretMaterial $responseText
+} else {
+    Write-Host "Skipping fallback admin Route smoke; Web Console ConsolePlugin is the primary entry"
 }
-$responseText = $response -join "`n"
-if ($responseText -notmatch "HTTP/.* 30[12378]" -and $responseText -notmatch "oauth") {
-    throw "admin Route did not look like an OAuth-protected redirect"
-}
-Assert-NoSecretMaterial $responseText
 
 Write-Host "Waiting for pgvector migration Job if it exists"
 $jobExists = $true

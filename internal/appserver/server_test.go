@@ -114,6 +114,8 @@ func TestDiagnosticsEndpointReturnsSecretFreeOperationalSummary(t *testing.T) {
 		`"authorizedGroups":["system:authenticated","cyops-admins"]`,
 		`"available":false`,
 		`"retrievalMetrics":"/api/ops/retrieval-metrics"`,
+		`"primarySurface":"openshift-web-console"`,
+		`"ui":{"title":"CYOps Diagnostics","primaryEntry":"openshift-web-console","fallbackRoute":"optional"}`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("body = %q, want %q", body, want)
@@ -121,6 +123,34 @@ func TestDiagnosticsEndpointReturnsSecretFreeOperationalSummary(t *testing.T) {
 	}
 	if strings.Contains(strings.ToLower(body), "token") || strings.Contains(strings.ToLower(body), "dsn") {
 		t.Fatalf("body = %q, want no token or dsn fields", body)
+	}
+}
+
+func TestDiagnosticsSchemaEndpointReturnsAggregateOnlyContract(t *testing.T) {
+	server := NewServerWithOptions(ServerOptions{
+		AdminAuth: AdminAuthConfig{Users: []string{"admin"}},
+	})
+	request := httptest.NewRequest(http.MethodGet, "/api/ops/diagnostics/schema", nil)
+	request.Header.Set("X-Forwarded-User", "admin")
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	body := recorder.Body.String()
+	for _, want := range []string{
+		`"version":"v0.0.23"`,
+		`"primaryEntry":"openshift-web-console"`,
+		`"aggregateOnly":true`,
+		`"documentContent"`,
+		`"postgresDsn"`,
+		`"adminToken"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("body = %q, want %q", body, want)
+		}
 	}
 }
 
