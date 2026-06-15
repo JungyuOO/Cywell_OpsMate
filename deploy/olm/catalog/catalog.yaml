@@ -7,8 +7,8 @@ schema: olm.channel
 package: cywell-opsmate
 name: alpha
 entries:
-- name: cywell-opsmate.v0.0.36
-  replaces: cywell-opsmate.v0.0.33
+- name: cywell-opsmate.v0.0.37
+  replaces: cywell-opsmate.v0.0.34
 - name: cywell-opsmate.v0.0.33
   replaces: cywell-opsmate.v0.0.32
 - name: cywell-opsmate.v0.0.32
@@ -18,9 +18,9 @@ entries:
 - name: cywell-opsmate.v0.0.29
 ---
 schema: olm.bundle
-name: cywell-opsmate.v0.0.36
+name: cywell-opsmate.v0.0.37
 package: cywell-opsmate
-image: ghcr.io/jungyuoo/cywell-opsmate-bundle:v0.0.36
+image: ghcr.io/jungyuoo/cywell-opsmate-bundle:v0.0.37
 properties:
 - type: olm.gvk
   value:
@@ -30,12 +30,12 @@ properties:
 - type: olm.package
   value:
     packageName: cywell-opsmate
-    version: 0.0.36
+    version: 0.0.37
 relatedImages:
 - name: manager
-  image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.36
+  image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.37
 - name: appserver
-  image: ghcr.io/jungyuoo/cywell-opsmate-appserver:v0.0.36
+  image: ghcr.io/jungyuoo/cywell-opsmate-appserver:v0.0.37
 ---
 schema: olm.bundle
 name: cywell-opsmate.v0.0.33

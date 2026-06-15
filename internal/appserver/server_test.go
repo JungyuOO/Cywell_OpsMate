@@ -160,7 +160,7 @@ func TestConsolePluginManifestIsServed(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		`"name": "cyops-console"`,
-		`"version": "0.0.36"`,
+		`"version": "0.0.37"`,
 		`"displayName": "CYOps"`,
 		`"console.navigation/href"`,
 		`"/console-plugin/diagnostics"`,
@@ -187,7 +187,7 @@ func TestConsolePluginEntryIsServed(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		`cyops-console`,
-		`0.0.36`,
+		`0.0.37`,
 		`/console-plugin/diagnostics`,
 	} {
 		if !strings.Contains(body, want) {
