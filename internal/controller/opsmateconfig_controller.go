@@ -13,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -374,21 +375,17 @@ func (r *OpsMateConfigReconciler) reconcileObject(ctx context.Context, desired c
 		})
 		return err
 	default:
-		current := desired.DeepCopyObject().(client.Object)
+		desiredUnstructured := desired.(*unstructured.Unstructured)
+		current := &unstructured.Unstructured{}
+		current.SetGroupVersionKind(desiredUnstructured.GroupVersionKind())
 		current.SetName(key.Name)
 		current.SetNamespace(key.Namespace)
 		_, err := controllerutil.CreateOrUpdate(ctx, r.Client, current, func() error {
 			current.SetLabels(desired.GetLabels())
+			current.SetAnnotations(desired.GetAnnotations())
 			current.SetOwnerReferences(desired.GetOwnerReferences())
-			unstructuredCurrent, ok := current.(interface {
-				UnstructuredContent() map[string]any
-				SetUnstructuredContent(map[string]any)
-			})
-			if ok {
-				unstructuredDesired := desired.(interface {
-					UnstructuredContent() map[string]any
-				})
-				unstructuredCurrent.SetUnstructuredContent(unstructuredDesired.UnstructuredContent())
+			if spec, ok := desiredUnstructured.Object["spec"]; ok {
+				current.Object["spec"] = spec
 			}
 			return nil
 		})
