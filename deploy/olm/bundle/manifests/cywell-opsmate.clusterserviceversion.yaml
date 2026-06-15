@@ -1,0 +1,209 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  name: cywell-opsmate.v0.0.29
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "opsmate.cywell.io/v1alpha1",
+          "kind": "OpsMateConfig",
+          "metadata": {
+            "name": "cyops",
+            "namespace": "cywell-opsmate-system"
+          },
+          "spec": {
+            "lightspeed": {
+              "apiBaseURL": "https://lightspeed.example.com",
+              "defaultProvider": "lightspeed"
+            },
+            "console": {
+              "enabled": true,
+              "displayName": "CYOps",
+              "adminUsers": ["admin"]
+            },
+            "embedding": {
+              "retrievalMode": "bytea"
+            }
+          }
+        }
+      ]
+    capabilities: Basic Install
+    categories: AI/Machine Learning, Monitoring, OpenShift Optional
+    certified: "false"
+    containerImage: ghcr.io/jungyuoo/cywell-opsmate:v0.0.28
+    description: CYOps integrates OpenShift operational assistance with a CYOps ConsolePlugin, Lightspeed API provider calls, and optional customer-document RAG.
+    operators.operatorframework.io/builder: cywell
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
+    repository: https://github.com/JungyuOO/Cywell_OpsMate
+    support: Cywell
+spec:
+  displayName: CYOps
+  description: |
+    CYOps installs an OpenShift Web Console plugin and backend operator that can
+    route operational questions through Lightspeed-compatible APIs and optional
+    customer-owned document retrieval.
+  version: 0.0.29
+  maturity: alpha
+  provider:
+    name: Cywell
+  keywords:
+  - OpenShift
+  - Lightspeed
+  - AIOps
+  - RAG
+  maintainers:
+  - name: Cywell
+    email: ops@example.com
+  links:
+  - name: CYOps
+    url: https://github.com/JungyuOO/Cywell_OpsMate
+  installModes:
+  - type: OwnNamespace
+    supported: true
+  - type: SingleNamespace
+    supported: true
+  - type: MultiNamespace
+    supported: false
+  - type: AllNamespaces
+    supported: false
+  install:
+    strategy: deployment
+    spec:
+      permissions:
+      - serviceAccountName: cywell-opsmate-controller-manager
+        rules:
+        - apiGroups:
+          - opsmate.cywell.io
+          resources:
+          - opsmateconfigs
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - opsmate.cywell.io
+          resources:
+          - opsmateconfigs/status
+          verbs:
+          - get
+          - update
+          - patch
+        - apiGroups:
+          - opsmate.cywell.io
+          resources:
+          - opsmateconfigs/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+        - apiGroups:
+          - batch
+          resources:
+          - jobs
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+        - apiGroups:
+          - ""
+          resources:
+          - services
+          - serviceaccounts
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+        - apiGroups:
+          - console.openshift.io
+          resources:
+          - consoleplugins
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+        - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - create
+          - get
+          - update
+      deployments:
+      - name: cywell-opsmate-controller-manager
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app.kubernetes.io/component: controller-manager
+              app.kubernetes.io/name: cywell-opsmate
+          template:
+            metadata:
+              labels:
+                app.kubernetes.io/component: controller-manager
+                app.kubernetes.io/name: cywell-opsmate
+            spec:
+              serviceAccountName: cywell-opsmate-controller-manager
+              securityContext:
+                runAsNonRoot: true
+              containers:
+              - name: manager
+                image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.28
+                imagePullPolicy: IfNotPresent
+                command:
+                - /manager
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 256Mi
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+                  runAsNonRoot: true
+  customresourcedefinitions:
+    owned:
+    - name: opsmateconfigs.opsmate.cywell.io
+      version: v1alpha1
+      kind: OpsMateConfig
+      displayName: OpsMate Config
+      description: Configures the CYOps OpenShift ConsolePlugin, Lightspeed API integration, and optional RAG infrastructure.
+  relatedImages:
+  - name: manager
+    image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.28
+  - name: appserver
+    image: ghcr.io/jungyuoo/cywell-opsmate-appserver:v0.0.27
