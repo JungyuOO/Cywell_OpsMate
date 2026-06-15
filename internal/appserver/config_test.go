@@ -18,6 +18,7 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	t.Setenv(envPGVectorRequired, "true")
 	t.Setenv(envRetrievalMode, "pgvector")
 	t.Setenv(envRetrievalSlowMS, "250")
+	t.Setenv(envAdminToken, "admin-token")
 
 	config := LoadConfigFromEnv()
 
@@ -53,6 +54,9 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	}
 	if config.RetrievalSlow != 250*time.Millisecond {
 		t.Fatalf("retrieval slow = %s, want 250ms", config.RetrievalSlow)
+	}
+	if config.AdminToken != "admin-token" {
+		t.Fatalf("admin token = %q, want configured token", config.AdminToken)
 	}
 }
 

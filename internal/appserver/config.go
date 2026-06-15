@@ -23,6 +23,7 @@ const (
 	envPGVectorRequired    = "CYOPS_PGVECTOR_REQUIRED"
 	envRetrievalMode       = "CYOPS_RETRIEVAL_MODE"
 	envRetrievalSlowMS     = "CYOPS_RETRIEVAL_SLOW_THRESHOLD_MS"
+	envAdminToken          = "CYOPS_ADMIN_TOKEN"
 )
 
 type AppConfig struct {
@@ -37,6 +38,7 @@ type AppConfig struct {
 	PGVectorRequired    bool
 	RetrievalMode       string
 	RetrievalSlow       time.Duration
+	AdminToken          string
 }
 
 func LoadConfigFromEnv() AppConfig {
@@ -58,6 +60,7 @@ func LoadConfigFromEnv() AppConfig {
 		PGVectorRequired:    parseBool(os.Getenv(envPGVectorRequired)),
 		RetrievalMode:       retrievalModeOrDefault(os.Getenv(envRetrievalMode)),
 		RetrievalSlow:       time.Duration(slowMS) * time.Millisecond,
+		AdminToken:          strings.TrimSpace(os.Getenv(envAdminToken)),
 	}
 }
 
@@ -98,11 +101,12 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 			Provider: LightspeedProvider{
 				Config: LightspeedProviderConfig{EndpointURL: config.LightspeedEndpoint},
 			},
-			Documents: documents,
-			Storage:   storageFromConfig(config),
-			Retriever: retriever,
-			Metrics:   metrics,
-			Embedder:  embedder,
+			Documents:  documents,
+			Storage:    storageFromConfig(config),
+			Retriever:  retriever,
+			Metrics:    metrics,
+			Embedder:   embedder,
+			AdminToken: config.AdminToken,
 		}), nil
 	}
 
@@ -110,9 +114,10 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 		Provider: LightspeedProvider{
 			Config: LightspeedProviderConfig{EndpointURL: config.LightspeedEndpoint},
 		},
-		Documents: documents,
-		Storage:   storageFromConfig(config),
-		Retriever: retriever,
+		Documents:  documents,
+		Storage:    storageFromConfig(config),
+		Retriever:  retriever,
+		AdminToken: config.AdminToken,
 	}), nil
 }
 

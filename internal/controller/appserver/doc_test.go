@@ -33,6 +33,7 @@ func TestDeploymentBuildsAppserverShape(t *testing.T) {
 	assertEnv(t, container.Env, "CYOPS_RETRIEVAL_SLOW_THRESHOLD_MS", "250")
 	assertSecretEnv(t, container.Env, "CYOPS_EMBEDDING_TOKEN", "embedding-secret", "api-token")
 	assertSecretEnv(t, container.Env, "CYOPS_POSTGRES_DSN", "pgvector-dsn", "dsn")
+	assertSecretEnv(t, container.Env, "CYOPS_ADMIN_TOKEN", "admin-token", "token")
 	assertEnv(t, container.Env, "POSTGRES_SERVICE_HOST", "sample-postgres")
 	assertEnv(t, container.Env, "TLS_CERT_FILE", TLSMountPath+"/tls.crt")
 	assertEnv(t, container.Env, "TLS_KEY_FILE", TLSMountPath+"/tls.key")
@@ -95,6 +96,9 @@ func sampleConfig() *opsmatev1alpha1.OpsMateConfig {
 			Database: opsmatev1alpha1.DatabaseSpec{
 				DSNSecretRef: "pgvector-dsn",
 				DSNSecretKey: "dsn",
+			},
+			Console: opsmatev1alpha1.ConsoleSpec{
+				AdminTokenSecretRef: "admin-token",
 			},
 		},
 	}

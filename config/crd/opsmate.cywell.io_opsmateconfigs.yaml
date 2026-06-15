@@ -102,6 +102,10 @@ spec:
               console:
                 type: object
                 properties:
+                  adminTokenSecretKey:
+                    type: string
+                  adminTokenSecretRef:
+                    type: string
                   enabled:
                     type: boolean
                   displayName:
@@ -109,6 +113,21 @@ spec:
           status:
             type: object
             properties:
+              pgVectorReady:
+                type: boolean
+              reembedding:
+                type: object
+                properties:
+                  running:
+                    type: boolean
+                  processed:
+                    type: integer
+                    format: int32
+                  failed:
+                    type: integer
+                    format: int32
+                  lastError:
+                    type: string
               overallStatus:
                 type: string
               conditions:

@@ -25,5 +25,7 @@ spec:
   console:
     enabled: true
     displayName: Cywell OpsMate
+    adminTokenSecretRef: opsmate-admin-token
+    adminTokenSecretKey: token
   aiops:
     enabled: false

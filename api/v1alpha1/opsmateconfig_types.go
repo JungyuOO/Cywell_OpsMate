@@ -51,13 +51,24 @@ type DatabaseSpec struct {
 }
 
 type ConsoleSpec struct {
-	Enabled     bool   `json:"enabled,omitempty"`
-	DisplayName string `json:"displayName,omitempty"`
+	Enabled             bool   `json:"enabled,omitempty"`
+	DisplayName         string `json:"displayName,omitempty"`
+	AdminTokenSecretRef string `json:"adminTokenSecretRef,omitempty"`
+	AdminTokenSecretKey string `json:"adminTokenSecretKey,omitempty"`
 }
 
 type OpsMateConfigStatus struct {
 	OverallStatus string             `json:"overallStatus,omitempty"`
+	PGVectorReady bool               `json:"pgVectorReady,omitempty"`
+	Reembedding   ReembeddingStatus  `json:"reembedding,omitempty"`
 	Conditions    []metav1.Condition `json:"conditions,omitempty"`
+}
+
+type ReembeddingStatus struct {
+	Running   bool   `json:"running,omitempty"`
+	Processed int    `json:"processed,omitempty"`
+	Failed    int    `json:"failed,omitempty"`
+	LastError string `json:"lastError,omitempty"`
 }
 
 // +kubebuilder:object:root=true

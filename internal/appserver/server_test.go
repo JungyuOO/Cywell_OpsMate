@@ -71,8 +71,9 @@ func TestRetrievalMetricsEndpointReturnsSnapshot(t *testing.T) {
 }
 
 func TestReembedEndpointRequiresPostgresRepository(t *testing.T) {
-	server := NewServer()
+	server := NewServerWithOptions(ServerOptions{AdminToken: "admin-token"})
 	request := httptest.NewRequest(http.MethodPost, "/api/ops/reembed", strings.NewReader(`{"limit":1}`))
+	request.Header.Set("X-CYOps-Admin-Token", "admin-token")
 	recorder := httptest.NewRecorder()
 
 	server.ServeHTTP(recorder, request)
@@ -82,6 +83,18 @@ func TestReembedEndpointRequiresPostgresRepository(t *testing.T) {
 	}
 	if !strings.Contains(recorder.Body.String(), "postgres document repository") {
 		t.Fatalf("body = %q, want postgres repository message", recorder.Body.String())
+	}
+}
+
+func TestReembedEndpointRequiresAdminToken(t *testing.T) {
+	server := NewServerWithOptions(ServerOptions{AdminToken: "admin-token"})
+	request := httptest.NewRequest(http.MethodPost, "/api/ops/reembed", strings.NewReader(`{"limit":1}`))
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusForbidden)
 	}
 }
 

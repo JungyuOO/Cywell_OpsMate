@@ -87,6 +87,7 @@ func statusConditions(config *opsmatev1alpha1.OpsMateConfig) []metav1.Condition 
 	conditions = upsertCondition(conditions, pgVectorRequiredCondition(config))
 	conditions = upsertCondition(conditions, pgVectorMigrationApprovedCondition(config))
 	conditions = upsertCondition(conditions, pgVectorReadyCondition(config))
+	conditions = upsertCondition(conditions, reembeddingCondition(config))
 	conditions = upsertCondition(conditions, retrievalModeReadyCondition(config))
 	return conditions
 }
@@ -178,12 +179,49 @@ func pgVectorReadyCondition(config *opsmatev1alpha1.OpsMateConfig) metav1.Condit
 			"pgvector readiness cannot be checked until a PostgreSQL DSN Secret reference is configured.",
 		)
 	}
+	if config.Status.PGVectorReady {
+		return condition(
+			"PGVectorReady",
+			metav1.ConditionTrue,
+			config.Generation,
+			"RuntimeCheckPassed",
+			"pgvector runtime validation has passed.",
+		)
+	}
 	return condition(
 		"PGVectorReady",
 		metav1.ConditionUnknown,
 		config.Generation,
 		"RuntimeCheckPending",
 		"pgvector readiness is validated by appserver startup and live smoke tests.",
+	)
+}
+
+func reembeddingCondition(config *opsmatev1alpha1.OpsMateConfig) metav1.Condition {
+	if config.Status.Reembedding.Running {
+		return condition(
+			"ReembeddingReady",
+			metav1.ConditionUnknown,
+			config.Generation,
+			"ReembeddingRunning",
+			"Document re-embedding is running.",
+		)
+	}
+	if config.Status.Reembedding.Failed > 0 {
+		return condition(
+			"ReembeddingReady",
+			metav1.ConditionFalse,
+			config.Generation,
+			"ReembeddingFailed",
+			"Document re-embedding completed with failures.",
+		)
+	}
+	return condition(
+		"ReembeddingReady",
+		metav1.ConditionTrue,
+		config.Generation,
+		"ReembeddingIdle",
+		"Document re-embedding is not running.",
 	)
 }
 
@@ -227,7 +265,7 @@ func retrievalModeReadyCondition(config *opsmatev1alpha1.OpsMateConfig) metav1.C
 
 func overallStatus(conditions []metav1.Condition) string {
 	for _, item := range conditions {
-		if item.Status == metav1.ConditionFalse && (item.Type == "PGVectorReady" || item.Type == "RetrievalModeReady") {
+		if item.Status == metav1.ConditionFalse && (item.Type == "PGVectorReady" || item.Type == "RetrievalModeReady" || item.Type == "ReembeddingReady") {
 			return "Degraded"
 		}
 	}

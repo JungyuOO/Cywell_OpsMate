@@ -123,6 +123,21 @@ func appserverEnv(config *opsmatev1alpha1.OpsMateConfig) []corev1.EnvVar {
 			},
 		})
 	}
+	if config.Spec.Console.AdminTokenSecretRef != "" {
+		key := config.Spec.Console.AdminTokenSecretKey
+		if key == "" {
+			key = "token"
+		}
+		env = append(env, corev1.EnvVar{
+			Name: "CYOPS_ADMIN_TOKEN",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: config.Spec.Console.AdminTokenSecretRef},
+					Key:                  key,
+				},
+			},
+		})
+	}
 	return env
 }
 
