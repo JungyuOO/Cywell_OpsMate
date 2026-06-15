@@ -100,6 +100,20 @@ func TestStatusConditionsDegradeFailedReembedding(t *testing.T) {
 	assertCondition(t, conditions, "ReembeddingReady", "False", "ReembeddingFailed")
 }
 
+func TestStatusConditionsDegradeFailedPGVectorEvidence(t *testing.T) {
+	config := &opsmatev1alpha1.OpsMateConfig{}
+	config.Spec.Database.DSNSecretRef = "postgres-dsn"
+	config.Spec.Embedding.RequirePGVector = true
+	config.Status.PGVectorLastError = "pgvector migration job failed"
+
+	conditions := statusConditions(config)
+
+	if got := overallStatus(conditions); got != "Degraded" {
+		t.Fatalf("overall status = %q, want Degraded", got)
+	}
+	assertCondition(t, conditions, "PGVectorReady", "False", "RuntimeCheckFailed")
+}
+
 func TestStatusConditionsDegradeInvalidPGVectorMode(t *testing.T) {
 	config := &opsmatev1alpha1.OpsMateConfig{}
 	config.Spec.Embedding.RetrievalMode = "pgvector"

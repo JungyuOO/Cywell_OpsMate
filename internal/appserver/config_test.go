@@ -19,6 +19,8 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	t.Setenv(envRetrievalMode, "pgvector")
 	t.Setenv(envRetrievalSlowMS, "250")
 	t.Setenv(envAdminToken, "admin-token")
+	t.Setenv(envAdminUsers, "alice, bob")
+	t.Setenv(envAdminGroups, "cyops-admins, cluster-admins")
 
 	config := LoadConfigFromEnv()
 
@@ -57,6 +59,12 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	}
 	if config.AdminToken != "admin-token" {
 		t.Fatalf("admin token = %q, want configured token", config.AdminToken)
+	}
+	if len(config.AdminUsers) != 2 || config.AdminUsers[0] != "alice" || config.AdminUsers[1] != "bob" {
+		t.Fatalf("admin users = %#v, want alice and bob", config.AdminUsers)
+	}
+	if len(config.AdminGroups) != 2 || config.AdminGroups[0] != "cyops-admins" || config.AdminGroups[1] != "cluster-admins" {
+		t.Fatalf("admin groups = %#v, want cyops-admins and cluster-admins", config.AdminGroups)
 	}
 }
 

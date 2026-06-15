@@ -24,6 +24,8 @@ const (
 	envRetrievalMode       = "CYOPS_RETRIEVAL_MODE"
 	envRetrievalSlowMS     = "CYOPS_RETRIEVAL_SLOW_THRESHOLD_MS"
 	envAdminToken          = "CYOPS_ADMIN_TOKEN"
+	envAdminUsers          = "CYOPS_ADMIN_USERS"
+	envAdminGroups         = "CYOPS_ADMIN_GROUPS"
 )
 
 type AppConfig struct {
@@ -39,6 +41,8 @@ type AppConfig struct {
 	RetrievalMode       string
 	RetrievalSlow       time.Duration
 	AdminToken          string
+	AdminUsers          []string
+	AdminGroups         []string
 }
 
 func LoadConfigFromEnv() AppConfig {
@@ -61,6 +65,8 @@ func LoadConfigFromEnv() AppConfig {
 		RetrievalMode:       retrievalModeOrDefault(os.Getenv(envRetrievalMode)),
 		RetrievalSlow:       time.Duration(slowMS) * time.Millisecond,
 		AdminToken:          strings.TrimSpace(os.Getenv(envAdminToken)),
+		AdminUsers:          splitCSV(os.Getenv(envAdminUsers)),
+		AdminGroups:         splitCSV(os.Getenv(envAdminGroups)),
 	}
 }
 
@@ -101,12 +107,12 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 			Provider: LightspeedProvider{
 				Config: LightspeedProviderConfig{EndpointURL: config.LightspeedEndpoint},
 			},
-			Documents:  documents,
-			Storage:    storageFromConfig(config),
-			Retriever:  retriever,
-			Metrics:    metrics,
-			Embedder:   embedder,
-			AdminToken: config.AdminToken,
+			Documents: documents,
+			Storage:   storageFromConfig(config),
+			Retriever: retriever,
+			Metrics:   metrics,
+			Embedder:  embedder,
+			AdminAuth: adminAuthFromConfig(config),
 		}), nil
 	}
 
@@ -114,11 +120,19 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 		Provider: LightspeedProvider{
 			Config: LightspeedProviderConfig{EndpointURL: config.LightspeedEndpoint},
 		},
-		Documents:  documents,
-		Storage:    storageFromConfig(config),
-		Retriever:  retriever,
-		AdminToken: config.AdminToken,
+		Documents: documents,
+		Storage:   storageFromConfig(config),
+		Retriever: retriever,
+		AdminAuth: adminAuthFromConfig(config),
 	}), nil
+}
+
+func adminAuthFromConfig(config AppConfig) AdminAuthConfig {
+	return AdminAuthConfig{
+		Token:  config.AdminToken,
+		Users:  config.AdminUsers,
+		Groups: config.AdminGroups,
+	}
 }
 
 func storageFromConfig(config AppConfig) DocumentStorage {
@@ -159,4 +173,16 @@ func parseBool(value string) bool {
 	default:
 		return false
 	}
+}
+
+func splitCSV(value string) []string {
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			result = append(result, part)
+		}
+	}
+	return result
 }

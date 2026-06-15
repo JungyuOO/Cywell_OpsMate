@@ -31,6 +31,8 @@ func TestDeploymentBuildsAppserverShape(t *testing.T) {
 	assertEnv(t, container.Env, "CYOPS_PGVECTOR_REQUIRED", "true")
 	assertEnv(t, container.Env, "CYOPS_RETRIEVAL_MODE", "pgvector")
 	assertEnv(t, container.Env, "CYOPS_RETRIEVAL_SLOW_THRESHOLD_MS", "250")
+	assertEnv(t, container.Env, "CYOPS_ADMIN_USERS", "alice,bob")
+	assertEnv(t, container.Env, "CYOPS_ADMIN_GROUPS", "cyops-admins,cluster-admins")
 	assertSecretEnv(t, container.Env, "CYOPS_EMBEDDING_TOKEN", "embedding-secret", "api-token")
 	assertSecretEnv(t, container.Env, "CYOPS_POSTGRES_DSN", "pgvector-dsn", "dsn")
 	assertSecretEnv(t, container.Env, "CYOPS_ADMIN_TOKEN", "admin-token", "token")
@@ -99,6 +101,8 @@ func sampleConfig() *opsmatev1alpha1.OpsMateConfig {
 			},
 			Console: opsmatev1alpha1.ConsoleSpec{
 				AdminTokenSecretRef: "admin-token",
+				AdminUsers:          []string{"alice", "bob"},
+				AdminGroups:         []string{"cyops-admins", "cluster-admins"},
 			},
 		},
 	}

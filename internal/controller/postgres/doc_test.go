@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	opsmatev1alpha1 "github.com/JungyuOO/Cywell_OpsMate/api/v1alpha1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -109,6 +110,47 @@ func TestPGVectorMigrationJobBuildsSecretBackedTemplate(t *testing.T) {
 	assertEnv(t, container.Env, "CYOPS_EMBEDDING_DIMENSIONS", "768")
 	if container.Env[0].Value != "" {
 		t.Fatal("dsn value is set directly, want SecretKeyRef only")
+	}
+}
+
+func TestApplyPGVectorMigrationJobStatusMarksReadyOnCompletion(t *testing.T) {
+	config := sampleConfig()
+	job := &batchv1.Job{
+		Status: batchv1.JobStatus{
+			Conditions: []batchv1.JobCondition{
+				{Type: batchv1.JobComplete, Status: corev1.ConditionTrue},
+			},
+		},
+	}
+
+	ApplyPGVectorMigrationJobStatus(config, job)
+
+	if !config.Status.PGVectorReady {
+		t.Fatal("pgVectorReady = false, want true")
+	}
+	if config.Status.PGVectorLastError != "" {
+		t.Fatalf("last error = %q, want empty", config.Status.PGVectorLastError)
+	}
+}
+
+func TestApplyPGVectorMigrationJobStatusRecordsFailure(t *testing.T) {
+	config := sampleConfig()
+	config.Status.PGVectorReady = true
+	job := &batchv1.Job{
+		Status: batchv1.JobStatus{
+			Conditions: []batchv1.JobCondition{
+				{Type: batchv1.JobFailed, Status: corev1.ConditionTrue},
+			},
+		},
+	}
+
+	ApplyPGVectorMigrationJobStatus(config, job)
+
+	if config.Status.PGVectorReady {
+		t.Fatal("pgVectorReady = true, want false")
+	}
+	if config.Status.PGVectorLastError != "pgvector migration job failed" {
+		t.Fatalf("last error = %q, want migration failure", config.Status.PGVectorLastError)
 	}
 }
 

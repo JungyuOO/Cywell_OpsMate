@@ -9,14 +9,14 @@ import (
 )
 
 type Server struct {
-	mux        *http.ServeMux
-	provider   ChatProvider
-	documents  DocumentRepository
-	storage    DocumentStorage
-	retriever  Retriever
-	metrics    *RetrievalMetrics
-	embedder   EmbeddingProvider
-	adminToken string
+	mux       *http.ServeMux
+	provider  ChatProvider
+	documents DocumentRepository
+	storage   DocumentStorage
+	retriever Retriever
+	metrics   *RetrievalMetrics
+	embedder  EmbeddingProvider
+	adminAuth AdminAuthConfig
 }
 
 func NewServer() *Server {
@@ -37,7 +37,14 @@ type ServerOptions struct {
 	Retriever  Retriever
 	Metrics    *RetrievalMetrics
 	Embedder   EmbeddingProvider
+	AdminAuth  AdminAuthConfig
 	AdminToken string
+}
+
+type AdminAuthConfig struct {
+	Token  string
+	Users  []string
+	Groups []string
 }
 
 func NewServerWithOptions(options ServerOptions) *Server {
@@ -54,14 +61,14 @@ func NewServerWithOptions(options ServerOptions) *Server {
 		metrics = NewRetrievalMetrics()
 	}
 	server := &Server{
-		mux:        http.NewServeMux(),
-		provider:   provider,
-		documents:  documents,
-		storage:    options.Storage,
-		retriever:  options.Retriever,
-		metrics:    metrics,
-		embedder:   options.Embedder,
-		adminToken: strings.TrimSpace(options.AdminToken),
+		mux:       http.NewServeMux(),
+		provider:  provider,
+		documents: documents,
+		storage:   options.Storage,
+		retriever: options.Retriever,
+		metrics:   metrics,
+		embedder:  options.Embedder,
+		adminAuth: normalizeAdminAuth(options),
 	}
 	server.mux.HandleFunc("/healthz", server.healthz)
 	server.mux.HandleFunc("/api/ops/retrieval-metrics", server.retrievalMetrics)
@@ -108,10 +115,13 @@ func (s *Server) reembedReadyDocuments(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) authorizeAdmin(r *http.Request) bool {
-	if s.adminToken == "" {
-		return false
+	if s.adminAuth.Token != "" && r.Header.Get("X-CYOps-Admin-Token") == s.adminAuth.Token {
+		return true
 	}
-	return r.Header.Get("X-CYOps-Admin-Token") == s.adminToken
+	if containsString(s.adminAuth.Users, r.Header.Get("X-Forwarded-User")) {
+		return true
+	}
+	return intersectsCSV(s.adminAuth.Groups, r.Header.Get("X-Forwarded-Groups"))
 }
 
 func (s *Server) retrievalMetrics(w http.ResponseWriter, r *http.Request) {
@@ -327,4 +337,48 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func normalizeAdminAuth(options ServerOptions) AdminAuthConfig {
+	auth := options.AdminAuth
+	if auth.Token == "" {
+		auth.Token = options.AdminToken
+	}
+	auth.Token = strings.TrimSpace(auth.Token)
+	auth.Users = trimStrings(auth.Users)
+	auth.Groups = trimStrings(auth.Groups)
+	return auth
+}
+
+func trimStrings(values []string) []string {
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			result = append(result, value)
+		}
+	}
+	return result
+}
+
+func containsString(values []string, target string) bool {
+	target = strings.TrimSpace(target)
+	if target == "" {
+		return false
+	}
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
+}
+
+func intersectsCSV(values []string, csv string) bool {
+	for _, candidate := range strings.Split(csv, ",") {
+		if containsString(values, candidate) {
+			return true
+		}
+	}
+	return false
 }

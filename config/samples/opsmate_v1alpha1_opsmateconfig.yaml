@@ -27,5 +27,9 @@ spec:
     displayName: Cywell OpsMate
     adminTokenSecretRef: opsmate-admin-token
     adminTokenSecretKey: token
+    adminUsers:
+    - admin
+    adminGroups:
+    - cyops-admins
   aiops:
     enabled: false
