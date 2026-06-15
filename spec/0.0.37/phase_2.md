@@ -6,6 +6,7 @@
 - [x] Identified the channel graph break: v0.0.36 replaced `v0.0.33`, but CRC was installed at `v0.0.34`.
 - [x] Updated v0.0.37 packaging references.
 - [x] Updated catalog head to `cywell-opsmate.v0.0.37 replaces cywell-opsmate.v0.0.34`.
+- [x] Restored the `cywell-opsmate.v0.0.34` catalog node so the channel has one head.
 - [x] Ran tests and manifest dry-run validation.
 
 ## Verification
@@ -17,6 +18,9 @@
 - `go test ./...` passed after the v0.0.37 graph/version update.
 - `oc apply --dry-run=client -f deploy\olm\bundle\manifests` passed for CSV `cywell-opsmate.v0.0.37` and the CRD.
 - `oc apply --dry-run=client -f deploy\olm\install\catalogsource.yaml` passed.
+- First v0.0.37 catalog pod failed with `multiple channel heads found in graph: cywell-opsmate.v0.0.33, cywell-opsmate.v0.0.37`.
+- Restored the missing v0.0.34 catalog node and kept `v0.0.37 -> v0.0.34 -> v0.0.33 -> v0.0.32 -> v0.0.31 -> v0.0.29`.
+- `docker run ... opm validate /configs` could not run because the local Docker Desktop API was unavailable.
 - `kubectl kustomize deploy/olm/local-crc` still failed in this Codex sandbox with `evalsymlink failure ... Access is denied`.
 
 ## Remaining Scope
