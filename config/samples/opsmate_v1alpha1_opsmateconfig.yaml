@@ -31,5 +31,9 @@ spec:
     - admin
     adminGroups:
     - cyops-admins
+    adminAuthProxyEnabled: true
+    adminAuthProxyImage: quay.io/openshift/origin-oauth-proxy:latest
+    adminAuthProxyCookieSecretRef: opsmate-admin-oauth-cookie
+    adminRouteHost: cyops-admin.apps.example.com
   aiops:
     enabled: false
