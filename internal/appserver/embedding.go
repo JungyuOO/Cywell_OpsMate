@@ -151,6 +151,16 @@ type EmbeddingService struct {
 	Provider   EmbeddingProvider
 }
 
+type ReembeddingRequest struct {
+	Limit int
+}
+
+type ReembeddingResult struct {
+	Processed int
+	Failed    int
+	Documents []Document
+}
+
 func (s EmbeddingService) EmbedDocument(ctx context.Context, documentID string) (Document, error) {
 	if s.Repository == nil {
 		return Document{}, fmt.Errorf("repository is required")
@@ -178,6 +188,30 @@ func (s EmbeddingService) EmbedDocument(ctx context.Context, documentID string) 
 		return s.fail(ctx, documentID, err.Error())
 	}
 	return s.Repository.CompleteEmbedding(ctx, documentID)
+}
+
+func (s EmbeddingService) ReembedReadyDocuments(ctx context.Context, request ReembeddingRequest) (ReembeddingResult, error) {
+	if s.Repository == nil {
+		return ReembeddingResult{}, fmt.Errorf("repository is required")
+	}
+	documents, err := s.Repository.ListReadyDocumentsForReembedding(ctx, request.Limit)
+	if err != nil {
+		return ReembeddingResult{}, err
+	}
+
+	result := ReembeddingResult{Documents: make([]Document, 0, len(documents))}
+	for _, document := range documents {
+		updated, err := s.EmbedDocument(ctx, document.ID)
+		result.Processed++
+		result.Documents = append(result.Documents, updated)
+		if err != nil {
+			result.Failed++
+		}
+	}
+	if result.Failed > 0 {
+		return result, fmt.Errorf("re-embedding failed for %d documents", result.Failed)
+	}
+	return result, nil
 }
 
 func (s EmbeddingService) fail(ctx context.Context, documentID string, message string) (Document, error) {
