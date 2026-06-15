@@ -21,10 +21,15 @@ spec:
       serviceAccountName: cywell-opsmate-controller-manager
       containers:
       - name: manager
-        image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.31
+        image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.32
         imagePullPolicy: IfNotPresent
         command:
         - /manager
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         resources:
           limits:
             cpu: 500m
