@@ -10,8 +10,17 @@ spec:
     defaultModel: gpt-4.1
   database:
     type: postgres
+    image: pgvector/pgvector:pg16
+    dsnSecretRef: opsmate-postgres-dsn
+    dsnSecretKey: dsn
     sharedBuffers: 128MB
     maxConnections: 100
+  embedding:
+    model: nomic-embed-text
+    dimensions: 768
+    requirePGVector: true
+    retrievalMode: pgvector
+    retrievalSlowMillis: 250
   console:
     enabled: true
     displayName: Cywell OpsMate
