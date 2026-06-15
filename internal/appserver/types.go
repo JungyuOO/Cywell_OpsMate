@@ -64,6 +64,15 @@ type DocumentDeleteResponse struct {
 	Status string `json:"status"`
 }
 
+type ReembeddingAPIRequest struct {
+	Limit int `json:"limit,omitempty"`
+}
+
+type ReembeddingAPIResponse struct {
+	Processed int `json:"processed"`
+	Failed    int `json:"failed"`
+}
+
 type ProviderRequest struct {
 	Message        string
 	Context        []ProviderContext

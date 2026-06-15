@@ -93,6 +93,7 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 			Observer:   metrics,
 			SlowAfter:  config.RetrievalSlow,
 		}
+		embedder := NewEmbeddingProviderFromConfig(config)
 		return NewServerWithOptions(ServerOptions{
 			Provider: LightspeedProvider{
 				Config: LightspeedProviderConfig{EndpointURL: config.LightspeedEndpoint},
@@ -101,6 +102,7 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 			Storage:   storageFromConfig(config),
 			Retriever: retriever,
 			Metrics:   metrics,
+			Embedder:  embedder,
 		}), nil
 	}
 
