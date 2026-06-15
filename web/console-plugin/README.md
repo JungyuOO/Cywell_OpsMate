@@ -1,16 +1,24 @@
-# CYOps Console Plugin Bundle Skeleton
+# CYOps Console Plugin Bundle
 
-This directory is the planned home for the OpenShift ConsolePlugin frontend
-bundle.
+This directory holds the frontend source contract for the CYOps OpenShift
+ConsolePlugin.
 
-v0.0.5 intentionally does not introduce a JavaScript toolchain. The first
-frontend implementation should add the smallest buildable bundle that provides:
+v0.0.24 introduces the first diagnostics view contract without adding a
+JavaScript toolchain. The appserver serves the runnable view through:
 
-- CYOps floating launcher
-- CYOps chat drawer shell
-- chat composer
-- document upload/list side panel placeholder
-- calls to `/api/chat` and `/api/documents`
+- `/console-plugin/diagnostics`
+- `/console-plugin/diagnostics.js`
+- `/console-plugin/diagnostics.css`
 
-The bundle should keep the Red Hat OpenShift Lightspeed UI separate. CYOps owns
-its own branding, drawer behavior, and document-management workflow.
+The JavaScript source in `src/` documents the dynamic plugin entry shape and
+calls only the Web Console backend paths:
+
+- `/api/ops/diagnostics`
+- `/api/ops/diagnostics/schema`
+
+The normal user journey is OpenShift Web Console -> CYOps ConsolePlugin ->
+appserver backend. The fallback admin Route is not part of this path.
+
+The bundle keeps the Red Hat OpenShift Lightspeed UI separate. CYOps owns its
+own branding, diagnostics surface, chat drawer, and document-management
+workflow.

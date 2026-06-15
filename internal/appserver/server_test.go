@@ -84,6 +84,57 @@ func TestDiagnosticsEndpointRequiresAdmin(t *testing.T) {
 	}
 }
 
+func TestConsoleDiagnosticsViewUsesConsoleBackendPath(t *testing.T) {
+	server := NewServer()
+	request := httptest.NewRequest(http.MethodGet, "/console-plugin/diagnostics", nil)
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	if contentType := recorder.Header().Get("Content-Type"); contentType != "text/html; charset=utf-8" {
+		t.Fatalf("content type = %q, want text/html", contentType)
+	}
+	body := recorder.Body.String()
+	for _, want := range []string{
+		`CYOps Diagnostics`,
+		`/console-plugin/diagnostics.js`,
+		`data-cyops-view="diagnostics"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("body = %q, want %q", body, want)
+		}
+	}
+}
+
+func TestConsoleDiagnosticsScriptCallsDiagnosticsAPIs(t *testing.T) {
+	server := NewServer()
+	request := httptest.NewRequest(http.MethodGet, "/console-plugin/diagnostics.js", nil)
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	body := recorder.Body.String()
+	for _, want := range []string{
+		`/api/ops/diagnostics/schema`,
+		`/api/ops/diagnostics`,
+		`credentials: "same-origin"`,
+		`OpenShift Web Console backend path`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("body = %q, want %q", body, want)
+		}
+	}
+	if strings.Contains(strings.ToLower(body), "oauth") {
+		t.Fatalf("script = %q, want no oauth route handling in console path", body)
+	}
+}
+
 func TestDiagnosticsEndpointReturnsSecretFreeOperationalSummary(t *testing.T) {
 	metrics := NewRetrievalMetrics()
 	metrics.ObserveRetrieval(RetrievalObservation{Mode: "pgvector", ResultCount: 3})
