@@ -23,6 +23,9 @@ func TestDeploymentBuildsAppserverShape(t *testing.T) {
 	if container.Image != DefaultImage {
 		t.Fatalf("image = %q, want %q", container.Image, DefaultImage)
 	}
+	if len(container.Command) != 1 || container.Command[0] != "/appserver" {
+		t.Fatalf("command = %v, want /appserver", container.Command)
+	}
 	assertEnv(t, container.Env, "LIGHTSPEED_API_BASE_URL", "https://lightspeed.example.com")
 	assertEnv(t, container.Env, "LIGHTSPEED_CREDENTIALS_SECRET", "lightspeed-secret")
 	assertEnv(t, container.Env, "CYOPS_EMBEDDING_ENDPOINT", "https://embedding.opsmate.svc/embed")
@@ -33,6 +36,7 @@ func TestDeploymentBuildsAppserverShape(t *testing.T) {
 	assertEnv(t, container.Env, "CYOPS_RETRIEVAL_SLOW_THRESHOLD_MS", "250")
 	assertEnv(t, container.Env, "CYOPS_ADMIN_USERS", "alice,bob")
 	assertEnv(t, container.Env, "CYOPS_ADMIN_GROUPS", "cyops-admins,cluster-admins")
+	assertEnv(t, container.Env, "CYOPS_LISTEN_ADDRESS", ":8443")
 	assertSecretEnv(t, container.Env, "CYOPS_EMBEDDING_TOKEN", "embedding-secret", "api-token")
 	assertSecretEnv(t, container.Env, "CYOPS_POSTGRES_DSN", "pgvector-dsn", "dsn")
 	assertSecretEnv(t, container.Env, "CYOPS_ADMIN_TOKEN", "admin-token", "token")
