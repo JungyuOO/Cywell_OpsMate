@@ -1,0 +1,42 @@
+name: appserver-image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/appserver-image.yml"
+      - "deploy/containerfiles/appserver.Containerfile"
+      - "cmd/appserver/**"
+      - "cmd/cyops-pgvector-migrate/**"
+      - "internal/appserver/**"
+      - "go.mod"
+      - "go.sum"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/jungyuoo/cywell-opsmate-appserver
+  IMAGE_VERSION: v0.0.27
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build appserver image
+        run: docker build -f deploy/containerfiles/appserver.Containerfile -t "${IMAGE_NAME}:${IMAGE_VERSION}" -t "${IMAGE_NAME}:latest" .
+
+      - name: Push version tag
+        run: docker push "${IMAGE_NAME}:${IMAGE_VERSION}"
+
+      - name: Push latest tag
+        run: docker push "${IMAGE_NAME}:latest"
