@@ -102,6 +102,14 @@ spec:
               console:
                 type: object
                 properties:
+                  adminAuthProxyCookieSecretRef:
+                    type: string
+                  adminAuthProxyEnabled:
+                    type: boolean
+                  adminAuthProxyImage:
+                    type: string
+                  adminRouteHost:
+                    type: string
                   adminTokenSecretKey:
                     type: string
                   adminTokenSecretRef:

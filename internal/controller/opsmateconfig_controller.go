@@ -5,9 +5,11 @@ import (
 
 	opsmatev1alpha1 "github.com/JungyuOO/Cywell_OpsMate/api/v1alpha1"
 	"github.com/JungyuOO/Cywell_OpsMate/internal/controller/appserver"
+	"github.com/JungyuOO/Cywell_OpsMate/internal/controller/authproxy"
 	consoleplugin "github.com/JungyuOO/Cywell_OpsMate/internal/controller/console"
 	"github.com/JungyuOO/Cywell_OpsMate/internal/controller/postgres"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,8 +34,10 @@ func SetupOpsMateConfigReconciler(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=opsmate.cywell.io,resources=opsmateconfigs,verbs=get;list;watch
 // +kubebuilder:rbac:groups=opsmate.cywell.io,resources=opsmateconfigs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch
-// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups="",resources=services;serviceaccounts,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=console.openshift.io,resources=consoleplugins,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch;create;update;patch
 func (r *OpsMateConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	config := &opsmatev1alpha1.OpsMateConfig{}
 	if err := r.Get(ctx, req.NamespacedName, config); err != nil {
@@ -61,6 +65,39 @@ func (r *OpsMateConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		plugin := consoleplugin.Plugin(config)
 		if err := r.reconcileObject(ctx, plugin); err != nil {
 			return ctrl.Result{}, err
+		}
+	}
+	if authproxy.Enabled(config) {
+		for _, object := range []client.Object{
+			authproxy.ServiceAccount(config),
+			authproxy.Deployment(config),
+			authproxy.Service(config),
+			authproxy.Route(config),
+		} {
+			if err := controllerutil.SetControllerReference(config, object, r.Scheme); err != nil {
+				return ctrl.Result{}, err
+			}
+			if err := r.reconcileObject(ctx, object); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+	}
+	if config.Spec.Database.PGVectorMigrationApproved {
+		job, err := postgres.PGVectorMigrationJob(config)
+		if err == nil {
+			if err := controllerutil.SetControllerReference(config, job, r.Scheme); err != nil {
+				return ctrl.Result{}, err
+			}
+			if err := r.reconcileObject(ctx, job); err != nil {
+				return ctrl.Result{}, err
+			}
+			current := &batchv1.Job{}
+			if err := r.Get(ctx, client.ObjectKeyFromObject(job), current); err != nil {
+				return ctrl.Result{}, err
+			}
+			postgres.ApplyPGVectorMigrationJobStatus(config, current)
+		} else {
+			config.Status.PGVectorLastError = err.Error()
 		}
 	}
 
@@ -311,6 +348,28 @@ func (r *OpsMateConfigReconciler) reconcileObject(ctx context.Context, desired c
 			current.ObjectMeta.OwnerReferences = desiredObject.ObjectMeta.OwnerReferences
 			current.Spec.Selector = desiredObject.Spec.Selector
 			current.Spec.Ports = desiredObject.Spec.Ports
+			return nil
+		})
+		return err
+	case *corev1.ServiceAccount:
+		current := &corev1.ServiceAccount{}
+		current.Name = key.Name
+		current.Namespace = key.Namespace
+		_, err := controllerutil.CreateOrUpdate(ctx, r.Client, current, func() error {
+			current.ObjectMeta.Labels = desiredObject.ObjectMeta.Labels
+			current.ObjectMeta.Annotations = desiredObject.ObjectMeta.Annotations
+			current.ObjectMeta.OwnerReferences = desiredObject.ObjectMeta.OwnerReferences
+			return nil
+		})
+		return err
+	case *batchv1.Job:
+		current := &batchv1.Job{}
+		current.Name = key.Name
+		current.Namespace = key.Namespace
+		_, err := controllerutil.CreateOrUpdate(ctx, r.Client, current, func() error {
+			current.ObjectMeta.Labels = desiredObject.ObjectMeta.Labels
+			current.ObjectMeta.OwnerReferences = desiredObject.ObjectMeta.OwnerReferences
+			current.Spec = desiredObject.Spec
 			return nil
 		})
 		return err

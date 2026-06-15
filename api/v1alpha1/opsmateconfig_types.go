@@ -51,12 +51,16 @@ type DatabaseSpec struct {
 }
 
 type ConsoleSpec struct {
-	Enabled             bool     `json:"enabled,omitempty"`
-	DisplayName         string   `json:"displayName,omitempty"`
-	AdminTokenSecretRef string   `json:"adminTokenSecretRef,omitempty"`
-	AdminTokenSecretKey string   `json:"adminTokenSecretKey,omitempty"`
-	AdminUsers          []string `json:"adminUsers,omitempty"`
-	AdminGroups         []string `json:"adminGroups,omitempty"`
+	Enabled                       bool     `json:"enabled,omitempty"`
+	DisplayName                   string   `json:"displayName,omitempty"`
+	AdminTokenSecretRef           string   `json:"adminTokenSecretRef,omitempty"`
+	AdminTokenSecretKey           string   `json:"adminTokenSecretKey,omitempty"`
+	AdminUsers                    []string `json:"adminUsers,omitempty"`
+	AdminGroups                   []string `json:"adminGroups,omitempty"`
+	AdminAuthProxyEnabled         bool     `json:"adminAuthProxyEnabled,omitempty"`
+	AdminAuthProxyImage           string   `json:"adminAuthProxyImage,omitempty"`
+	AdminAuthProxyCookieSecretRef string   `json:"adminAuthProxyCookieSecretRef,omitempty"`
+	AdminRouteHost                string   `json:"adminRouteHost,omitempty"`
 }
 
 type OpsMateConfigStatus struct {

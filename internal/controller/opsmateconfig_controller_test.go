@@ -6,6 +6,7 @@ import (
 
 	opsmatev1alpha1 "github.com/JungyuOO/Cywell_OpsMate/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -30,6 +31,8 @@ func TestReconcileCreatesAppserverAndPostgresResources(t *testing.T) {
 	config.Spec.Database.MaxConnections = 100
 	config.Spec.Console.Enabled = true
 	config.Spec.Console.DisplayName = "OpsMate"
+	config.Spec.Console.AdminAuthProxyEnabled = true
+	config.Spec.Console.AdminAuthProxyCookieSecretRef = "sample-cookie"
 
 	reconciler := &OpsMateConfigReconciler{
 		Client: fake.NewClientBuilder().
@@ -46,9 +49,13 @@ func TestReconcileCreatesAppserverAndPostgresResources(t *testing.T) {
 
 	assertDeploymentExists(t, ctx, reconciler.Client, "sample-appserver")
 	assertDeploymentExists(t, ctx, reconciler.Client, "sample-postgres")
+	assertDeploymentExists(t, ctx, reconciler.Client, "sample-admin-authproxy")
 	assertServiceExists(t, ctx, reconciler.Client, "sample-appserver")
 	assertServiceExists(t, ctx, reconciler.Client, "sample-postgres")
+	assertServiceExists(t, ctx, reconciler.Client, "sample-admin-authproxy")
+	assertServiceAccountExists(t, ctx, reconciler.Client, "sample-admin-authproxy")
 	assertConsolePluginExists(t, ctx, reconciler.Client, "sample-console")
+	assertRouteExists(t, ctx, reconciler.Client, "sample-admin-authproxy")
 
 	updated := &opsmatev1alpha1.OpsMateConfig{}
 	if err := reconciler.Get(ctx, client.ObjectKeyFromObject(config), updated); err != nil {
@@ -64,6 +71,49 @@ func TestReconcileCreatesAppserverAndPostgresResources(t *testing.T) {
 	assertCondition(t, updated.Status.Conditions, "PGVectorReady", "True", "NotRequired")
 	assertCondition(t, updated.Status.Conditions, "ReembeddingReady", "True", "ReembeddingIdle")
 	assertCondition(t, updated.Status.Conditions, "RetrievalModeReady", "True", "BYTEAFallback")
+}
+
+func TestReconcileAppliesCompletedPGVectorMigrationJobStatus(t *testing.T) {
+	ctx := context.Background()
+	scheme := testScheme(t)
+
+	config := &opsmatev1alpha1.OpsMateConfig{}
+	config.Name = "sample"
+	config.Namespace = "opsmate"
+	config.Spec.Database.PGVectorMigrationApproved = true
+	config.Spec.Database.DSNSecretRef = "postgres-dsn"
+	config.Spec.Embedding.RequirePGVector = true
+	config.Spec.Embedding.RetrievalMode = "pgvector"
+	config.Spec.Embedding.Dimensions = 768
+
+	job := &batchv1.Job{}
+	job.Name = "sample-pgvector-migration"
+	job.Namespace = "opsmate"
+	job.Status.Conditions = []batchv1.JobCondition{
+		{Type: batchv1.JobComplete, Status: corev1.ConditionTrue},
+	}
+
+	reconciler := &OpsMateConfigReconciler{
+		Client: fake.NewClientBuilder().
+			WithScheme(scheme).
+			WithStatusSubresource(&opsmatev1alpha1.OpsMateConfig{}).
+			WithObjects(config, job).
+			Build(),
+		Scheme: scheme,
+	}
+
+	if _, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: client.ObjectKeyFromObject(config)}); err != nil {
+		t.Fatal(err)
+	}
+
+	updated := &opsmatev1alpha1.OpsMateConfig{}
+	if err := reconciler.Get(ctx, client.ObjectKeyFromObject(config), updated); err != nil {
+		t.Fatal(err)
+	}
+	if !updated.Status.PGVectorReady {
+		t.Fatal("pgVectorReady = false, want true")
+	}
+	assertCondition(t, updated.Status.Conditions, "PGVectorReady", "True", "RuntimeCheckPassed")
 }
 
 func TestStatusConditionsExposePGVectorConfiguration(t *testing.T) {
@@ -175,11 +225,30 @@ func assertServiceExists(t *testing.T, ctx context.Context, c client.Client, nam
 	}
 }
 
+func assertServiceAccountExists(t *testing.T, ctx context.Context, c client.Client, name string) {
+	t.Helper()
+	serviceAccount := &corev1.ServiceAccount{}
+	if err := c.Get(ctx, client.ObjectKey{Namespace: "opsmate", Name: name}, serviceAccount); err != nil {
+		t.Fatalf("service account %s missing: %v", name, err)
+	}
+	if serviceAccount.Annotations["serviceaccounts.openshift.io/oauth-redirectreference."+name] == "" {
+		t.Fatalf("service account %s missing oauth redirect annotation", name)
+	}
+}
+
 func assertConsolePluginExists(t *testing.T, ctx context.Context, c client.Client, name string) {
 	t.Helper()
 	plugin := consolePluginObject()
 	if err := c.Get(ctx, client.ObjectKey{Name: name}, plugin); err != nil {
 		t.Fatalf("console plugin %s missing: %v", name, err)
+	}
+}
+
+func assertRouteExists(t *testing.T, ctx context.Context, c client.Client, name string) {
+	t.Helper()
+	route := routeObject()
+	if err := c.Get(ctx, client.ObjectKey{Namespace: "opsmate", Name: name}, route); err != nil {
+		t.Fatalf("route %s missing: %v", name, err)
 	}
 }
 
@@ -214,6 +283,11 @@ func testScheme(t *testing.T) *runtime.Scheme {
 		Version: "v1",
 		Kind:    "ConsolePlugin",
 	}, consolePluginObject())
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{
+		Group:   "route.openshift.io",
+		Version: "v1",
+		Kind:    "Route",
+	}, routeObject())
 	return scheme
 }
 
@@ -225,4 +299,14 @@ func consolePluginObject() *unstructured.Unstructured {
 		Kind:    "ConsolePlugin",
 	})
 	return plugin
+}
+
+func routeObject() *unstructured.Unstructured {
+	route := &unstructured.Unstructured{}
+	route.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "route.openshift.io",
+		Version: "v1",
+		Kind:    "Route",
+	})
+	return route
 }
