@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"strings"
 )
@@ -17,6 +18,7 @@ type Server struct {
 	metrics   *RetrievalMetrics
 	embedder  EmbeddingProvider
 	adminAuth AdminAuthConfig
+	devUser   string
 }
 
 func NewServer() *Server {
@@ -39,6 +41,7 @@ type ServerOptions struct {
 	Embedder   EmbeddingProvider
 	AdminAuth  AdminAuthConfig
 	AdminToken string
+	DevUser    string
 }
 
 type AdminAuthConfig struct {
@@ -69,6 +72,7 @@ func NewServerWithOptions(options ServerOptions) *Server {
 		metrics:   metrics,
 		embedder:  options.Embedder,
 		adminAuth: normalizeAdminAuth(options),
+		devUser:   strings.TrimSpace(options.DevUser),
 	}
 	server.mux.HandleFunc("/healthz", server.healthz)
 	server.mux.HandleFunc("/console-plugin/diagnostics", server.consoleDiagnostics)
@@ -200,7 +204,18 @@ func (s *Server) diagnosticsSchema(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	r = s.withLocalDevUser(r)
 	s.mux.ServeHTTP(w, r)
+}
+
+func (s *Server) withLocalDevUser(r *http.Request) *http.Request {
+	if s.devUser == "" || r.Header.Get("X-Forwarded-User") != "" || !isLoopbackRemote(r.RemoteAddr) {
+		return r
+	}
+	clone := r.Clone(r.Context())
+	clone.Header = r.Header.Clone()
+	clone.Header.Set("X-Forwarded-User", s.devUser)
+	return clone
 }
 
 func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
@@ -448,6 +463,15 @@ func intersectsCSV(values []string, csv string) bool {
 		}
 	}
 	return false
+}
+
+func isLoopbackRemote(remoteAddr string) bool {
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		host = remoteAddr
+	}
+	ip := net.ParseIP(strings.Trim(host, "[]"))
+	return ip != nil && ip.IsLoopback()
 }
 
 func documentDiagnostics(documents []Document) DocumentDiagnostics {

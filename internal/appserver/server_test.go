@@ -84,6 +84,41 @@ func TestDiagnosticsEndpointRequiresAdmin(t *testing.T) {
 	}
 }
 
+func TestDiagnosticsEndpointAllowsLoopbackDevUser(t *testing.T) {
+	server := NewServerWithOptions(ServerOptions{
+		AdminAuth: AdminAuthConfig{Users: []string{"admin"}},
+		DevUser:   "admin",
+	})
+	request := httptest.NewRequest(http.MethodGet, "/api/ops/diagnostics", nil)
+	request.RemoteAddr = "127.0.0.1:54321"
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	if !strings.Contains(recorder.Body.String(), `"authorizedUser":"admin"`) {
+		t.Fatalf("body = %q, want local dev admin user", recorder.Body.String())
+	}
+}
+
+func TestDiagnosticsEndpointRejectsDevUserFromNonLoopback(t *testing.T) {
+	server := NewServerWithOptions(ServerOptions{
+		AdminAuth: AdminAuthConfig{Users: []string{"admin"}},
+		DevUser:   "admin",
+	})
+	request := httptest.NewRequest(http.MethodGet, "/api/ops/diagnostics", nil)
+	request.RemoteAddr = "192.0.2.10:54321"
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusForbidden)
+	}
+}
+
 func TestConsoleDiagnosticsViewUsesConsoleBackendPath(t *testing.T) {
 	server := NewServer()
 	request := httptest.NewRequest(http.MethodGet, "/console-plugin/diagnostics", nil)

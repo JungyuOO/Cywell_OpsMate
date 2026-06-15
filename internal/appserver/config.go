@@ -26,6 +26,7 @@ const (
 	envAdminToken          = "CYOPS_ADMIN_TOKEN"
 	envAdminUsers          = "CYOPS_ADMIN_USERS"
 	envAdminGroups         = "CYOPS_ADMIN_GROUPS"
+	envDevAdminUser        = "CYOPS_DEV_ADMIN_USER"
 )
 
 type AppConfig struct {
@@ -43,6 +44,7 @@ type AppConfig struct {
 	AdminToken          string
 	AdminUsers          []string
 	AdminGroups         []string
+	DevAdminUser        string
 }
 
 func LoadConfigFromEnv() AppConfig {
@@ -52,6 +54,11 @@ func LoadConfigFromEnv() AppConfig {
 	}
 	dimensions, _ := strconv.Atoi(strings.TrimSpace(os.Getenv(envEmbeddingDimensions)))
 	slowMS, _ := strconv.Atoi(strings.TrimSpace(os.Getenv(envRetrievalSlowMS)))
+	devAdminUser := strings.TrimSpace(os.Getenv(envDevAdminUser))
+	adminUsers := splitCSV(os.Getenv(envAdminUsers))
+	if devAdminUser != "" && !containsString(adminUsers, devAdminUser) {
+		adminUsers = append(adminUsers, devAdminUser)
+	}
 	return AppConfig{
 		PostgresDSN:         strings.TrimSpace(os.Getenv(envPostgresDSN)),
 		Namespace:           namespace,
@@ -65,8 +72,9 @@ func LoadConfigFromEnv() AppConfig {
 		RetrievalMode:       retrievalModeOrDefault(os.Getenv(envRetrievalMode)),
 		RetrievalSlow:       time.Duration(slowMS) * time.Millisecond,
 		AdminToken:          strings.TrimSpace(os.Getenv(envAdminToken)),
-		AdminUsers:          splitCSV(os.Getenv(envAdminUsers)),
+		AdminUsers:          adminUsers,
 		AdminGroups:         splitCSV(os.Getenv(envAdminGroups)),
+		DevAdminUser:        devAdminUser,
 	}
 }
 
@@ -113,6 +121,7 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 			Metrics:   metrics,
 			Embedder:  embedder,
 			AdminAuth: adminAuthFromConfig(config),
+			DevUser:   config.DevAdminUser,
 		}), nil
 	}
 
@@ -124,6 +133,7 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 		Storage:   storageFromConfig(config),
 		Retriever: retriever,
 		AdminAuth: adminAuthFromConfig(config),
+		DevUser:   config.DevAdminUser,
 	}), nil
 }
 
