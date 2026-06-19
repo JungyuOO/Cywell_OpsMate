@@ -1,4 +1,4 @@
-name: operator-bundle
+﻿name: operator-bundle
 
 on:
   push:
@@ -16,7 +16,7 @@ permissions:
 
 env:
   IMAGE_NAME: ghcr.io/jungyuoo/cywell-opsmate-bundle
-  IMAGE_VERSION: v0.0.52
+  IMAGE_VERSION: v0.0.53
 
 jobs:
   publish:

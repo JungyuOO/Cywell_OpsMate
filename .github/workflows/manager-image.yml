@@ -1,4 +1,4 @@
-name: manager-image
+﻿name: manager-image
 
 on:
   push:
@@ -21,7 +21,7 @@ permissions:
 
 env:
   IMAGE_NAME: ghcr.io/jungyuoo/cywell-opsmate
-  IMAGE_VERSION: v0.0.52
+  IMAGE_VERSION: v0.0.53
 
 jobs:
   publish:

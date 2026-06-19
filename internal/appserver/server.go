@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -90,6 +91,7 @@ func NewServerWithOptions(options ServerOptions) *Server {
 	server.mux.HandleFunc("/api/ops/retrieval-metrics", server.retrievalMetrics)
 	server.mux.HandleFunc("/api/ops/reembed", server.reembedReadyDocuments)
 	server.mux.HandleFunc("/api/chat", server.chat)
+	server.mux.HandleFunc("/api/chat/message/", server.chatFromPath)
 	server.mux.HandleFunc("/api/documents", server.documentsRoot)
 	server.mux.HandleFunc("/api/documents/", server.documentByID)
 	return server
@@ -269,6 +271,24 @@ func (s *Server) chatFromQuery(w http.ResponseWriter, r *http.Request) {
 		request.RAG.Enabled = true
 	}
 	s.handleChatRequest(w, r, request)
+}
+
+func (s *Server) chatFromPath(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	encoded := strings.TrimPrefix(r.URL.Path, "/api/chat/message/")
+	message, err := url.PathUnescape(encoded)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid message path")
+		return
+	}
+	s.handleChatRequest(w, r, ChatRequest{
+		Message:  message,
+		Provider: "lightspeed",
+		RAG:      RAGRequest{Enabled: true},
+	})
 }
 
 func (s *Server) handleChatRequest(w http.ResponseWriter, r *http.Request, request ChatRequest) {
