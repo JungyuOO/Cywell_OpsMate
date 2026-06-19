@@ -186,7 +186,7 @@ func TestConsolePluginManifestIsServed(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		`"name": "\uC790\uB8CC"`,
-		`"version": "0.0.52"`,
+		`"version": "0.0.53"`,
 		`"customProperties":`,
 		`"displayName": "CYOps"`,
 		`"baseURL": "/api/plugins/cyops-console/"`,
@@ -233,18 +233,20 @@ func TestConsolePluginEntryIsServed(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		`cyops-console`,
-		`0.0.52`,
+		`0.0.53`,
 		`loadPluginEntry`,
-		`cyops-console@0.0.52`,
+		`cyops-console@0.0.53`,
 		`cyopsLauncherFlag`,
 		`data-cyops-plugin-entry`,
 		`pluginProxyBase`,
 		`apiBase + path`,
 		`requestChat`,
-		`URLSearchParams`,
+		`encodeURIComponent`,
+		`/api/chat/message/`,
 		`event.key === "Enter"`,
 		`requestSubmit`,
 		`cyops-console-nav-documents`,
+		`cyops-doc-workspace`,
 		`window.SERVER_FLAGS`,
 		`csrf-token`,
 		`X-CSRFToken`,
@@ -264,6 +266,9 @@ func TestConsolePluginEntryIsServed(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Fatalf("body = %q, want %q", body, want)
 		}
+	}
+	if strings.Contains(body, `<aside class="cyops-docs"><h3>Documents</h3><label class="cyops-file"><input type="file" data-cyops-upload></label>`) {
+		t.Fatalf("chat drawer still contains document upload UI: %q", body)
 	}
 }
 
@@ -458,6 +463,25 @@ func TestChatRoutesToProvider(t *testing.T) {
 func TestChatSupportsGetForConsolePluginProxy(t *testing.T) {
 	server := NewServer()
 	request := httptest.NewRequest(http.MethodGet, "/api/chat?message=Why+is+this+pod+not+ready%3F&provider=lightspeed&rag=true", nil)
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	body := recorder.Body.String()
+	if !strings.Contains(body, `"provider":"lightspeed"`) {
+		t.Fatalf("body = %q, want provider lightspeed", body)
+	}
+	if !strings.Contains(body, `Mocked CYOps response`) {
+		t.Fatalf("body = %q, want mocked answer", body)
+	}
+}
+
+func TestChatSupportsPathMessageForConsolePluginProxy(t *testing.T) {
+	server := NewServer()
+	request := httptest.NewRequest(http.MethodGet, "/api/chat/message/Why%20is%20this%20pod%20not%20ready%3F", nil)
 	recorder := httptest.NewRecorder()
 
 	server.ServeHTTP(recorder, request)

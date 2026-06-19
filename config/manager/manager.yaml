@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+﻿apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cywell-opsmate-controller-manager
@@ -21,7 +21,7 @@ spec:
       serviceAccountName: cywell-opsmate-controller-manager
       containers:
       - name: manager
-        image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.52
+        image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.53
         imagePullPolicy: IfNotPresent
         command:
         - /manager
