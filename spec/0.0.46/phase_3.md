@@ -3,14 +3,17 @@
 ## Tasks
 
 - [x] Create or link GitHub Issues.
-- [ ] Commit with Lore trailers.
-- [ ] Push branch and open PR.
-- [ ] Merge PR and verify linked Issues close.
+- [x] Commit with Lore trailers.
+- [x] Push branch and open PR.
+- [x] Merge PR and verify linked Issues close.
 
 ## Verification
 
 - Created #202 for the v0.0.46 CSRF and Lightspeed provider wiring fix.
+- Pushed `feature/v0.0.46`.
+- Merged PR #203 into main.
+- PR #203 closed #202.
 
 ## Remaining Scope
 
-- Commit, PR, merge, CRC upgrade, and browser chat smoke remain.
+- Browser chat smoke remains user-observed after hard refresh.

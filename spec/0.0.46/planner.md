@@ -26,8 +26,8 @@
 | Phase | Scope | Status | Evidence |
 | --- | --- | --- | --- |
 | Phase 1 | CSRF and Lightspeed runtime wiring | done | appserver/controller tests |
-| Phase 2 | OLM packaging and CRC upgrade | in progress | Go tests and OLM dry-run passed |
-| Phase 3 | Issue/PR handoff | planned | pending |
+| Phase 2 | OLM packaging and CRC upgrade | done | CRC CSV and gateway smoke passed |
+| Phase 3 | Issue/PR handoff | done | PR #203 merged and issue #202 closed |
 
 Tracking issue: #202
 
@@ -57,5 +57,6 @@ Tracking issue: #202
 - [x] Operator injects Lightspeed endpoint/provider/model/token env vars.
 - [x] Go tests pass.
 - [x] OLM dry-run passes.
-- [ ] v0.0.46 installs on CRC.
+- [x] v0.0.46 installs on CRC.
+- [x] Gateway smoke confirms v0.0.46 entry includes `X-CSRFToken`.
 - [ ] Browser chat smoke no longer gets 403.
