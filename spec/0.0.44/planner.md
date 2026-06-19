@@ -26,8 +26,8 @@
 | Phase | Scope | Status | Evidence |
 | --- | --- | --- | --- |
 | Phase 1 | Entry-load mount fix | done | appserver tests |
-| Phase 2 | OLM packaging and CRC upgrade | in progress | Go tests and OLM dry-run passed |
-| Phase 3 | Issue/PR handoff | planned | pending |
+| Phase 2 | OLM packaging and CRC upgrade | done | CRC CSV and gateway smoke passed |
+| Phase 3 | Issue/PR handoff | done | PR #199 merged and issue #198 closed |
 
 Tracking issue: #198
 
@@ -56,5 +56,5 @@ Tracking issue: #198
 - [x] Entry leaves `data-cyops-plugin-entry="0.0.44"` for diagnosis.
 - [x] Go tests pass.
 - [x] OLM dry-run passes.
-- [ ] v0.0.44 installs on CRC.
-- [ ] Gateway endpoint smoke confirms the direct mount content.
+- [x] v0.0.44 installs on CRC.
+- [x] Gateway endpoint smoke confirms the direct mount content.
