@@ -160,8 +160,12 @@ func TestConsolePluginManifestIsServed(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		`"name": "cyops-console"`,
-		`"version": "0.0.37"`,
+		`"version": "0.0.38"`,
 		`"displayName": "CYOps"`,
+		`"baseURL": "/api/plugins/cyops-console/"`,
+		`"loadScripts":`,
+		`"plugin-entry.js"`,
+		`"registrationMethod": "callback"`,
 		`"console.navigation/href"`,
 		`"/console-plugin/diagnostics"`,
 	} {
@@ -187,7 +191,12 @@ func TestConsolePluginEntryIsServed(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		`cyops-console`,
-		`0.0.37`,
+		`0.0.38`,
+		`window.loadPluginEntry`,
+		`data-cyops-launcher`,
+		`/api/chat`,
+		`/api/documents`,
+		`provider: "lightspeed"`,
 		`/console-plugin/diagnostics`,
 	} {
 		if !strings.Contains(body, want) {
@@ -219,6 +228,21 @@ func TestConsoleDiagnosticsScriptCallsDiagnosticsAPIs(t *testing.T) {
 	}
 	if strings.Contains(strings.ToLower(body), "oauth") {
 		t.Fatalf("script = %q, want no oauth route handling in console path", body)
+	}
+}
+
+func TestConsolePluginEntryRootAliasIsServed(t *testing.T) {
+	server := NewServer()
+	request := httptest.NewRequest(http.MethodGet, "/plugin-entry.js", nil)
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	if !strings.Contains(recorder.Body.String(), `window.loadPluginEntry`) {
+		t.Fatalf("body = %q, want callback entry", recorder.Body.String())
 	}
 }
 

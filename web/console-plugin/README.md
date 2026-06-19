@@ -3,16 +3,22 @@
 This directory holds the frontend source contract for the CYOps OpenShift
 ConsolePlugin.
 
-v0.0.24 introduces the first diagnostics view contract without adding a
-JavaScript toolchain. The appserver serves the runnable view through:
+v0.0.38 keeps the no-toolchain approach but now serves a standard OpenShift
+dynamic plugin manifest and callback entry bundle. The appserver serves:
 
+- `/plugin-manifest.json`
+- `/plugin-entry.js`
 - `/console-plugin/diagnostics`
 - `/console-plugin/diagnostics.js`
 - `/console-plugin/diagnostics.css`
 
-The JavaScript source in `src/` documents the dynamic plugin entry shape and
-calls only the Web Console backend paths:
+The manifest includes `baseURL`, `loadScripts`, and
+`registrationMethod: "callback"`. The entry script calls
+`window.loadPluginEntry("cyops-console", ...)`, injects the CYOps launcher, and
+uses only the Web Console plugin backend paths:
 
+- `/api/chat`
+- `/api/documents`
 - `/api/ops/diagnostics`
 - `/api/ops/diagnostics/schema`
 
