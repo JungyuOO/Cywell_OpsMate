@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	DefaultImage          = "ghcr.io/jungyuoo/cywell-opsmate-appserver:v0.0.39"
+	DefaultImage          = "ghcr.io/jungyuoo/cywell-opsmate-appserver:v0.0.40"
 	PortName              = "https"
 	Port                  = int32(8443)
 	ServiceCertAnnotation = "service.beta.openshift.io/serving-cert-secret-name"

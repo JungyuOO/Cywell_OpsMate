@@ -3,7 +3,7 @@
 This directory holds the frontend source contract for the CYOps OpenShift
 ConsolePlugin.
 
-v0.0.39 keeps the no-toolchain approach but now serves a standard OpenShift
+v0.0.40 keeps the no-toolchain approach but now serves a standard OpenShift
 dynamic plugin manifest and callback entry bundle. The appserver serves:
 
 - `/plugin-manifest.json`
