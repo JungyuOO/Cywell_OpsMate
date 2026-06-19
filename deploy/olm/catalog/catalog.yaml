@@ -7,6 +7,8 @@ schema: olm.channel
 package: cywell-opsmate
 name: alpha
 entries:
+- name: cywell-opsmate.v0.0.52
+  replaces: cywell-opsmate.v0.0.51
 - name: cywell-opsmate.v0.0.51
   replaces: cywell-opsmate.v0.0.50
 - name: cywell-opsmate.v0.0.50
@@ -46,6 +48,28 @@ entries:
 - name: cywell-opsmate.v0.0.31
   replaces: cywell-opsmate.v0.0.29
 - name: cywell-opsmate.v0.0.29
+---
+schema: olm.bundle
+name: cywell-opsmate.v0.0.52
+package: cywell-opsmate
+image: ghcr.io/jungyuoo/cywell-opsmate-bundle:v0.0.52
+properties:
+- type: olm.gvk
+  value:
+    group: opsmate.cywell.io
+    kind: OpsMateConfig
+    version: v1alpha1
+- type: olm.package
+  value:
+    packageName: cywell-opsmate
+    version: 0.0.52
+relatedImages:
+- name: manager
+  image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.52
+- name: appserver
+  image: ghcr.io/jungyuoo/cywell-opsmate-appserver:v0.0.52
+- name: gateway
+  image: nginxinc/nginx-unprivileged:1.27-alpine
 ---
 schema: olm.bundle
 name: cywell-opsmate.v0.0.51

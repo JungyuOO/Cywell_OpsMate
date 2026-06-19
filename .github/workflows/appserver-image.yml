@@ -20,7 +20,7 @@ permissions:
 
 env:
   IMAGE_NAME: ghcr.io/jungyuoo/cywell-opsmate-appserver
-  IMAGE_VERSION: v0.0.51
+  IMAGE_VERSION: v0.0.52
 
 jobs:
   publish:

@@ -82,6 +82,9 @@ func NewServerWithOptions(options ServerOptions) *Server {
 	server.mux.HandleFunc("/console-plugin/diagnostics", server.consoleDiagnostics)
 	server.mux.HandleFunc("/console-plugin/diagnostics.js", server.consoleDiagnosticsJS)
 	server.mux.HandleFunc("/console-plugin/diagnostics.css", server.consoleDiagnosticsCSS)
+	server.mux.HandleFunc("/console-plugin/documents", server.consoleDocuments)
+	server.mux.HandleFunc("/console-plugin/documents.js", server.consoleDocumentsJS)
+	server.mux.HandleFunc("/console-plugin/documents.css", server.consoleDocumentsCSS)
 	server.mux.HandleFunc("/api/ops/diagnostics", server.diagnostics)
 	server.mux.HandleFunc("/api/ops/diagnostics/schema", server.diagnosticsSchema)
 	server.mux.HandleFunc("/api/ops/retrieval-metrics", server.retrievalMetrics)
@@ -236,16 +239,39 @@ func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
+	switch r.Method {
+	case http.MethodGet:
+		s.chatFromQuery(w, r)
+	case http.MethodPost:
+		s.chatFromBody(w, r)
+	default:
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
+}
 
+func (s *Server) chatFromBody(w http.ResponseWriter, r *http.Request) {
 	var request ChatRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid json body")
 		return
 	}
+	s.handleChatRequest(w, r, request)
+}
+
+func (s *Server) chatFromQuery(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	request := ChatRequest{
+		Message:  query.Get("message"),
+		Provider: query.Get("provider"),
+	}
+	if query.Get("rag") == "true" {
+		request.RAG.Enabled = true
+	}
+	s.handleChatRequest(w, r, request)
+}
+
+func (s *Server) handleChatRequest(w http.ResponseWriter, r *http.Request, request ChatRequest) {
 	if strings.TrimSpace(request.Message) == "" {
 		writeError(w, http.StatusBadRequest, "message is required")
 		return
