@@ -33,8 +33,8 @@
 | Phase | Scope | Status | Evidence |
 | --- | --- | --- | --- |
 | Phase 1 | Manifest schema correction | done | appserver tests |
-| Phase 2 | Packaging and CRC smoke | pending | OLM and endpoint evidence |
-| Phase 3 | Issue/PR handoff | pending | GitHub evidence |
+| Phase 2 | Packaging and CRC smoke | done | OLM and endpoint evidence |
+| Phase 3 | Issue/PR handoff | done | GitHub evidence |
 
 Tracking issue: #188
 
@@ -61,5 +61,5 @@ Tracking issue: #188
 - [x] Manifest no longer has top-level `displayName` or `description`.
 - [x] Manifest exposes `customProperties.console.displayName`.
 - [x] Go tests pass.
-- [ ] v0.0.39 packaging validates and installs on CRC.
-- [ ] CRC endpoint smoke confirms the accepted manifest shape.
+- [x] v0.0.39 packaging validates and installs on CRC.
+- [x] CRC endpoint smoke confirms the accepted manifest shape.
