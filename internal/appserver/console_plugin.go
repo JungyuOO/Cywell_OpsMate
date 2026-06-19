@@ -4,7 +4,7 @@ import "net/http"
 
 const consolePluginManifestJSON = `{
   "name": "cyops-console",
-  "version": "0.0.43",
+  "version": "0.0.44",
   "baseURL": "/api/plugins/cyops-console/",
   "loadScripts": [
     "plugin-entry.js"
@@ -43,7 +43,7 @@ const consolePluginManifestJSON = `{
 
 const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   name: "cyops-console",
-  version: "0.0.43",
+  version: "0.0.44",
   diagnosticsPath: "/console-plugin/diagnostics"
 };
 
@@ -228,22 +228,36 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
     mountUI();
   }
 
+  function markEntryLoaded() {
+    document.documentElement.setAttribute("data-cyops-plugin-entry", "0.0.44");
+  }
+
   function cyopsLauncherFlag() {
+    markEntryLoaded();
     start();
     return Promise.resolve({ CYOPS_CONSOLE_LAUNCHER: true });
   }
 
-  if (typeof window.loadPluginEntry === "function") {
-    window.loadPluginEntry("cyops-console@0.0.43", {
-      cyopsLauncherFlag: function () {
-        return Promise.resolve(function () {
-          return cyopsLauncherFlag;
-        });
-      },
-    });
-  } else {
-    start();
+  const pluginEntry = {
+    cyopsLauncherFlag: function () {
+      return Promise.resolve(function () {
+        return cyopsLauncherFlag;
+      });
+    },
+  };
+  const registerPluginEntry = typeof loadPluginEntry === "function"
+    ? loadPluginEntry
+    : typeof window.loadPluginEntry === "function"
+      ? window.loadPluginEntry
+      : null;
+
+  if (registerPluginEntry) {
+    registerPluginEntry("cyops-console@0.0.44", pluginEntry);
   }
+  markEntryLoaded();
+  start();
+  window.setTimeout(start, 250);
+  window.setTimeout(start, 1000);
 })();`
 
 const consoleDiagnosticsHTML = `<!doctype html>
