@@ -13,8 +13,6 @@ type LightspeedProviderConfig struct {
 	EndpointURL       string
 	CredentialsSecret string
 	Token             string
-	DefaultProvider   string
-	DefaultModel      string
 }
 
 type HTTPDoer interface {
@@ -43,8 +41,6 @@ func (p LightspeedProvider) Chat(request ProviderRequest) (ProviderResponse, err
 		"message":        request.Message,
 		"context":        request.Context,
 		"clusterContext": request.ClusterContext,
-		"provider":       p.Config.DefaultProvider,
-		"model":          p.Config.DefaultModel,
 	})
 	if err != nil {
 		return ProviderResponse{}, err

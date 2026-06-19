@@ -63,6 +63,12 @@ func TestLightspeedProviderPostsToConfiguredEndpoint(t *testing.T) {
 	if !strings.Contains(body, `"message":"hello"`) {
 		t.Fatalf("request body = %q, want message", body)
 	}
+	if strings.Contains(body, `"model"`) {
+		t.Fatalf("request body = %q, did not expect model; model is selected by OLSConfig", body)
+	}
+	if strings.Contains(body, `"provider"`) {
+		t.Fatalf("request body = %q, did not expect provider; provider is selected by OLSConfig", body)
+	}
 	if authorization != "Bearer secret-token" {
 		t.Fatalf("authorization = %q, want bearer token", authorization)
 	}

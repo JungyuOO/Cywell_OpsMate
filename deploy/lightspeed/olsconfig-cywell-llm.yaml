@@ -1,0 +1,17 @@
+apiVersion: ols.openshift.io/v1alpha1
+kind: OLSConfig
+metadata:
+  name: cluster
+spec:
+  llm:
+    providers:
+    - name: cywell-cllm
+      type: openai
+      url: http://cllm.cywell.co.kr/v1
+      credentialsSecretRef:
+        name: cywell-cllm-credentials
+      models:
+      - name: gemma-4-26b-a4b-it-awq-8bit
+  ols:
+    defaultProvider: cywell-cllm
+    defaultModel: gemma-4-26b-a4b-it-awq-8bit
