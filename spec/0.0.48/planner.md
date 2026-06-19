@@ -27,7 +27,7 @@
 | --- | --- | --- | --- |
 | Phase 1 | Runtime boundary cleanup | done | appserver/provider tests |
 | Phase 2 | Lightspeed OLSConfig example and samples | done | manifest review |
-| Phase 3 | Packaging, issue, PR, CRC upgrade | in progress | Go tests and OLM dry-run passed |
+| Phase 3 | Packaging, issue, PR, CRC upgrade | done | CRC CSV `cywell-opsmate.v0.0.48` Succeeded |
 
 Tracking issue: #206
 
@@ -56,4 +56,4 @@ Tracking issue: #206
 - [x] CYWELL Lightspeed `OLSConfig` example exists.
 - [x] Go tests pass.
 - [x] OLM dry-run passes.
-- [ ] v0.0.48 installs on CRC.
+- [x] v0.0.48 installs on CRC.
