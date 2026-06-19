@@ -145,6 +145,31 @@ func TestConsoleDiagnosticsViewUsesConsoleBackendPath(t *testing.T) {
 	}
 }
 
+func TestConsoleDocumentsViewIsServed(t *testing.T) {
+	server := NewServer()
+	request := httptest.NewRequest(http.MethodGet, "/console-plugin/documents", nil)
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	if contentType := recorder.Header().Get("Content-Type"); contentType != "text/html; charset=utf-8" {
+		t.Fatalf("content type = %q, want text/html", contentType)
+	}
+	body := recorder.Body.String()
+	for _, want := range []string{
+		`CYOps Documents`,
+		`/console-plugin/documents.js`,
+		`data-cyops-view="documents"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("body = %q, want %q", body, want)
+		}
+	}
+}
+
 func TestConsolePluginManifestIsServed(t *testing.T) {
 	server := NewServer()
 	request := httptest.NewRequest(http.MethodGet, "/plugin-manifest.json", nil)
@@ -160,8 +185,8 @@ func TestConsolePluginManifestIsServed(t *testing.T) {
 	}
 	body := recorder.Body.String()
 	for _, want := range []string{
-		`"name": "cyops-console"`,
-		`"version": "0.0.51"`,
+		`"name": "\uC790\uB8CC"`,
+		`"version": "0.0.52"`,
 		`"customProperties":`,
 		`"displayName": "CYOps"`,
 		`"baseURL": "/api/plugins/cyops-console/"`,
@@ -172,6 +197,8 @@ func TestConsolePluginManifestIsServed(t *testing.T) {
 		`"$codeRef": "cyopsLauncherFlag"`,
 		`"console.navigation/href"`,
 		`"/console-plugin/diagnostics"`,
+		`"/console-plugin/documents"`,
+		`"name": "\uC790\uB8CC"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("body = %q, want %q", body, want)
@@ -206,13 +233,20 @@ func TestConsolePluginEntryIsServed(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		`cyops-console`,
-		`0.0.51`,
+		`0.0.52`,
 		`loadPluginEntry`,
-		`cyops-console@0.0.51`,
+		`cyops-console@0.0.52`,
 		`cyopsLauncherFlag`,
 		`data-cyops-plugin-entry`,
 		`pluginProxyBase`,
 		`apiBase + path`,
+		`requestChat`,
+		`URLSearchParams`,
+		`event.key === "Enter"`,
+		`requestSubmit`,
+		`cyops-console-nav-documents`,
+		`window.SERVER_FLAGS`,
+		`csrf-token`,
 		`X-CSRFToken`,
 		`X-CSRF-Token`,
 		`X-Requested-With`,
@@ -405,6 +439,25 @@ func TestReembedEndpointAllowsForwardedAdminGroup(t *testing.T) {
 func TestChatRoutesToProvider(t *testing.T) {
 	server := NewServer()
 	request := httptest.NewRequest(http.MethodPost, "/api/chat", strings.NewReader(`{"message":"Why is this pod not ready?","provider":"lightspeed"}`))
+	recorder := httptest.NewRecorder()
+
+	server.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	body := recorder.Body.String()
+	if !strings.Contains(body, `"provider":"lightspeed"`) {
+		t.Fatalf("body = %q, want provider lightspeed", body)
+	}
+	if !strings.Contains(body, `Mocked CYOps response`) {
+		t.Fatalf("body = %q, want mocked answer", body)
+	}
+}
+
+func TestChatSupportsGetForConsolePluginProxy(t *testing.T) {
+	server := NewServer()
+	request := httptest.NewRequest(http.MethodGet, "/api/chat?message=Why+is+this+pod+not+ready%3F&provider=lightspeed&rag=true", nil)
 	recorder := httptest.NewRecorder()
 
 	server.ServeHTTP(recorder, request)
