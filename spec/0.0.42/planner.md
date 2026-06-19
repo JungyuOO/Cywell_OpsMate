@@ -27,8 +27,8 @@
 | Phase | Scope | Status | Evidence |
 | --- | --- | --- | --- |
 | Phase 1 | Gateway controller resources | done | Go tests |
-| Phase 2 | OLM packaging and CRC upgrade | pending | OLM dry-run passed; publish pending |
-| Phase 3 | Issue/PR handoff | pending | GitHub evidence |
+| Phase 2 | OLM packaging and CRC upgrade | done | CRC CSV/gateway endpoint smoke |
+| Phase 3 | Issue/PR handoff | done | PR #195 merged and issue #194 closed |
 
 Tracking issue: #194
 
@@ -59,4 +59,4 @@ Tracking issue: #194
 - [x] ConsolePlugin backend points at `cyops-gateway`.
 - [x] OLM permissions include ConfigMap reconciliation.
 - [x] Go tests pass.
-- [ ] v0.0.42 installs on CRC and gateway endpoint serves plugin assets.
+- [x] v0.0.42 installs on CRC and gateway endpoint serves plugin assets.

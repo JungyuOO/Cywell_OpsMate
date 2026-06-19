@@ -3,14 +3,16 @@
 ## Tasks
 
 - [x] Create or link GitHub Issues.
-- [ ] Commit with Lore trailers.
-- [ ] Push branch and open PR.
-- [ ] Merge PR and verify linked Issues close.
+- [x] Commit with Lore trailers.
+- [x] Push branch and open PR.
+- [x] Merge PR and verify linked Issues close.
 
 ## Verification
 
 - Created #194 for the v0.0.42 nginx gateway backend work.
+- Merged PR #195 into main.
+- PR #195 closed #194.
 
 ## Remaining Scope
 
-- Pending.
+- Continue with browser-side hard refresh/user visual confirmation if cached OpenShift Console assets still show the previous launcher.
