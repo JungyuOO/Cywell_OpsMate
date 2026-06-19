@@ -29,8 +29,10 @@ func TestDeploymentBuildsAppserverShape(t *testing.T) {
 	assertEnv(t, container.Env, "LIGHTSPEED_API_BASE_URL", "https://lightspeed.example.com")
 	assertEnv(t, container.Env, "LIGHTSPEED_CREDENTIALS_SECRET", "lightspeed-secret")
 	assertEnv(t, container.Env, "CYOPS_LIGHTSPEED_ENDPOINT", "https://lightspeed.example.com")
-	assertEnv(t, container.Env, "CYOPS_LIGHTSPEED_PROVIDER", "openai")
-	assertEnv(t, container.Env, "CYOPS_LIGHTSPEED_MODEL", "gpt-4.1")
+	assertEnvMissing(t, container.Env, "CYOPS_LIGHTSPEED_PROVIDER")
+	assertEnvMissing(t, container.Env, "CYOPS_LIGHTSPEED_MODEL")
+	assertEnvMissing(t, container.Env, "LIGHTSPEED_DEFAULT_PROVIDER")
+	assertEnvMissing(t, container.Env, "LIGHTSPEED_DEFAULT_MODEL")
 	assertEnv(t, container.Env, "CYOPS_EMBEDDING_ENDPOINT", "https://embedding.opsmate.svc/embed")
 	assertEnv(t, container.Env, "CYOPS_EMBEDDING_MODEL", "nomic-embed-text")
 	assertEnv(t, container.Env, "CYOPS_EMBEDDING_DIMENSIONS", "768")
@@ -90,8 +92,7 @@ func sampleConfig() *opsmatev1alpha1.OpsMateConfig {
 			Lightspeed: opsmatev1alpha1.LightspeedSpec{
 				APIBaseURL:           "https://lightspeed.example.com",
 				CredentialsSecretRef: "lightspeed-secret",
-				DefaultProvider:      "openai",
-				DefaultModel:         "gpt-4.1",
+				DefaultProvider:      "lightspeed",
 			},
 			Embedding: opsmatev1alpha1.EmbeddingSpec{
 				EndpointURL:          "https://embedding.opsmate.svc/embed",
@@ -127,6 +128,15 @@ func assertEnv(t *testing.T, env []corev1.EnvVar, name string, want string) {
 		}
 	}
 	t.Fatalf("missing env %s", name)
+}
+
+func assertEnvMissing(t *testing.T, env []corev1.EnvVar, name string) {
+	t.Helper()
+	for _, item := range env {
+		if item.Name == name {
+			t.Fatalf("unexpected env %s", name)
+		}
+	}
 }
 
 func assertSecretEnv(t *testing.T, env []corev1.EnvVar, name string, secretName string, key string) {

@@ -17,8 +17,6 @@ const (
 	envDocumentStoragePath = "CYOPS_DOCUMENT_STORAGE_PATH"
 	envLightspeedEndpoint  = "CYOPS_LIGHTSPEED_ENDPOINT"
 	envLightspeedToken     = "CYOPS_LIGHTSPEED_TOKEN"
-	envLightspeedProvider  = "CYOPS_LIGHTSPEED_PROVIDER"
-	envLightspeedModel     = "CYOPS_LIGHTSPEED_MODEL"
 	envEmbeddingEndpoint   = "CYOPS_EMBEDDING_ENDPOINT"
 	envEmbeddingModel      = "CYOPS_EMBEDDING_MODEL"
 	envEmbeddingDimensions = "CYOPS_EMBEDDING_DIMENSIONS"
@@ -38,8 +36,6 @@ type AppConfig struct {
 	DocumentStoragePath string
 	LightspeedEndpoint  string
 	LightspeedToken     string
-	LightspeedProvider  string
-	LightspeedModel     string
 	EmbeddingEndpoint   string
 	EmbeddingModel      string
 	EmbeddingDimensions int
@@ -71,8 +67,6 @@ func LoadConfigFromEnv() AppConfig {
 		DocumentStoragePath: strings.TrimSpace(os.Getenv(envDocumentStoragePath)),
 		LightspeedEndpoint:  firstNonEmpty(strings.TrimSpace(os.Getenv(envLightspeedEndpoint)), strings.TrimSpace(os.Getenv("LIGHTSPEED_API_BASE_URL"))),
 		LightspeedToken:     firstNonEmpty(strings.TrimSpace(os.Getenv(envLightspeedToken)), strings.TrimSpace(os.Getenv("LIGHTSPEED_API_TOKEN"))),
-		LightspeedProvider:  firstNonEmpty(strings.TrimSpace(os.Getenv(envLightspeedProvider)), strings.TrimSpace(os.Getenv("LIGHTSPEED_DEFAULT_PROVIDER"))),
-		LightspeedModel:     firstNonEmpty(strings.TrimSpace(os.Getenv(envLightspeedModel)), strings.TrimSpace(os.Getenv("LIGHTSPEED_DEFAULT_MODEL"))),
 		EmbeddingEndpoint:   strings.TrimSpace(os.Getenv(envEmbeddingEndpoint)),
 		EmbeddingModel:      strings.TrimSpace(os.Getenv(envEmbeddingModel)),
 		EmbeddingDimensions: dimensions,
@@ -148,10 +142,8 @@ func NewServerFromConfig(ctx context.Context, config AppConfig) (*Server, error)
 
 func lightspeedProviderConfig(config AppConfig) LightspeedProviderConfig {
 	return LightspeedProviderConfig{
-		EndpointURL:     config.LightspeedEndpoint,
-		Token:           config.LightspeedToken,
-		DefaultProvider: config.LightspeedProvider,
-		DefaultModel:    config.LightspeedModel,
+		EndpointURL: config.LightspeedEndpoint,
+		Token:       config.LightspeedToken,
 	}
 }
 

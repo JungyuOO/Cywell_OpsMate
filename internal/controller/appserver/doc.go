@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	DefaultImage          = "ghcr.io/jungyuoo/cywell-opsmate-appserver:v0.0.47"
+	DefaultImage          = "ghcr.io/jungyuoo/cywell-opsmate-appserver:v0.0.48"
 	PortName              = "https"
 	Port                  = int32(8443)
 	ServiceCertAnnotation = "service.beta.openshift.io/serving-cert-secret-name"
@@ -82,12 +82,8 @@ func Deployment(config *opsmatev1alpha1.OpsMateConfig) *appsv1.Deployment {
 func appserverEnv(config *opsmatev1alpha1.OpsMateConfig) []corev1.EnvVar {
 	env := []corev1.EnvVar{
 		{Name: "CYOPS_LIGHTSPEED_ENDPOINT", Value: config.Spec.Lightspeed.APIBaseURL},
-		{Name: "CYOPS_LIGHTSPEED_PROVIDER", Value: config.Spec.Lightspeed.DefaultProvider},
-		{Name: "CYOPS_LIGHTSPEED_MODEL", Value: config.Spec.Lightspeed.DefaultModel},
 		{Name: "LIGHTSPEED_API_BASE_URL", Value: config.Spec.Lightspeed.APIBaseURL},
 		{Name: "LIGHTSPEED_CREDENTIALS_SECRET", Value: config.Spec.Lightspeed.CredentialsSecretRef},
-		{Name: "LIGHTSPEED_DEFAULT_PROVIDER", Value: config.Spec.Lightspeed.DefaultProvider},
-		{Name: "LIGHTSPEED_DEFAULT_MODEL", Value: config.Spec.Lightspeed.DefaultModel},
 		{Name: "CYOPS_EMBEDDING_ENDPOINT", Value: config.Spec.Embedding.EndpointURL},
 		{Name: "CYOPS_EMBEDDING_MODEL", Value: config.Spec.Embedding.Model},
 		{Name: "CYOPS_EMBEDDING_DIMENSIONS", Value: embeddingDimensions(config)},

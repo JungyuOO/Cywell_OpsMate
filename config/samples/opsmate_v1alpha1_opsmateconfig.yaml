@@ -4,10 +4,9 @@ metadata:
   name: sample
 spec:
   lightspeed:
-    apiBaseURL: https://lightspeed-api.example.com
+    apiBaseURL: https://lightspeed-app-server.openshift-lightspeed.svc:8443
     credentialsSecretRef: lightspeed-api-credentials
-    defaultProvider: openai
-    defaultModel: gpt-4.1
+    defaultProvider: lightspeed
   database:
     type: postgres
     image: pgvector/pgvector:pg16

@@ -12,8 +12,6 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	t.Setenv(envDocumentStoragePath, "/var/lib/cyops/documents")
 	t.Setenv(envLightspeedEndpoint, "https://lightspeed.example/api/chat")
 	t.Setenv(envLightspeedToken, "lightspeed-token")
-	t.Setenv(envLightspeedProvider, "openai")
-	t.Setenv(envLightspeedModel, "gpt-4.1")
 	t.Setenv(envEmbeddingEndpoint, "https://embedding.example/embed")
 	t.Setenv(envEmbeddingModel, "embedding-model")
 	t.Setenv(envEmbeddingDimensions, "8")
@@ -42,12 +40,6 @@ func TestLoadConfigFromEnv(t *testing.T) {
 	}
 	if config.LightspeedToken != "lightspeed-token" {
 		t.Fatalf("lightspeed token = %q", config.LightspeedToken)
-	}
-	if config.LightspeedProvider != "openai" {
-		t.Fatalf("lightspeed provider = %q", config.LightspeedProvider)
-	}
-	if config.LightspeedModel != "gpt-4.1" {
-		t.Fatalf("lightspeed model = %q", config.LightspeedModel)
 	}
 	if config.EmbeddingEndpoint != "https://embedding.example/embed" {
 		t.Fatalf("embedding endpoint = %q", config.EmbeddingEndpoint)
@@ -87,8 +79,6 @@ func TestLoadConfigFromEnv(t *testing.T) {
 func TestLoadConfigFromLegacyLightspeedEnv(t *testing.T) {
 	t.Setenv("LIGHTSPEED_API_BASE_URL", "https://lightspeed.apps.example/api")
 	t.Setenv("LIGHTSPEED_API_TOKEN", "legacy-token")
-	t.Setenv("LIGHTSPEED_DEFAULT_PROVIDER", "internal")
-	t.Setenv("LIGHTSPEED_DEFAULT_MODEL", "llm-70b")
 
 	config := LoadConfigFromEnv()
 
@@ -97,12 +87,6 @@ func TestLoadConfigFromLegacyLightspeedEnv(t *testing.T) {
 	}
 	if config.LightspeedToken != "legacy-token" {
 		t.Fatalf("lightspeed token = %q", config.LightspeedToken)
-	}
-	if config.LightspeedProvider != "internal" {
-		t.Fatalf("lightspeed provider = %q", config.LightspeedProvider)
-	}
-	if config.LightspeedModel != "llm-70b" {
-		t.Fatalf("lightspeed model = %q", config.LightspeedModel)
 	}
 }
 
