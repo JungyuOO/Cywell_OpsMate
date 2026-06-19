@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	DefaultImage          = "ghcr.io/jungyuoo/cywell-opsmate-appserver:v0.0.45"
+	DefaultImage          = "ghcr.io/jungyuoo/cywell-opsmate-appserver:v0.0.46"
 	PortName              = "https"
 	Port                  = int32(8443)
 	ServiceCertAnnotation = "service.beta.openshift.io/serving-cert-secret-name"
@@ -81,6 +81,9 @@ func Deployment(config *opsmatev1alpha1.OpsMateConfig) *appsv1.Deployment {
 
 func appserverEnv(config *opsmatev1alpha1.OpsMateConfig) []corev1.EnvVar {
 	env := []corev1.EnvVar{
+		{Name: "CYOPS_LIGHTSPEED_ENDPOINT", Value: config.Spec.Lightspeed.APIBaseURL},
+		{Name: "CYOPS_LIGHTSPEED_PROVIDER", Value: config.Spec.Lightspeed.DefaultProvider},
+		{Name: "CYOPS_LIGHTSPEED_MODEL", Value: config.Spec.Lightspeed.DefaultModel},
 		{Name: "LIGHTSPEED_API_BASE_URL", Value: config.Spec.Lightspeed.APIBaseURL},
 		{Name: "LIGHTSPEED_CREDENTIALS_SECRET", Value: config.Spec.Lightspeed.CredentialsSecretRef},
 		{Name: "LIGHTSPEED_DEFAULT_PROVIDER", Value: config.Spec.Lightspeed.DefaultProvider},
@@ -109,6 +112,17 @@ func appserverEnv(config *opsmatev1alpha1.OpsMateConfig) []corev1.EnvVar {
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: config.Spec.Embedding.CredentialsSecretRef},
 					Key:                  key,
+				},
+			},
+		})
+	}
+	if config.Spec.Lightspeed.CredentialsSecretRef != "" {
+		env = append(env, corev1.EnvVar{
+			Name: "CYOPS_LIGHTSPEED_TOKEN",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: config.Spec.Lightspeed.CredentialsSecretRef},
+					Key:                  "token",
 				},
 			},
 		})

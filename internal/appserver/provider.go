@@ -10,6 +10,7 @@ import (
 type LightspeedProviderConfig struct {
 	EndpointURL       string
 	CredentialsSecret string
+	Token             string
 	DefaultProvider   string
 	DefaultModel      string
 }
@@ -51,6 +52,9 @@ func (p LightspeedProvider) Chat(request ProviderRequest) (ProviderResponse, err
 		return ProviderResponse{}, err
 	}
 	httpRequest.Header.Set("Content-Type", "application/json")
+	if p.Config.Token != "" {
+		httpRequest.Header.Set("Authorization", "Bearer "+p.Config.Token)
+	}
 
 	httpResponse, err := client.Do(httpRequest)
 	if err != nil {

@@ -161,7 +161,7 @@ func TestConsolePluginManifestIsServed(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		`"name": "cyops-console"`,
-		`"version": "0.0.45"`,
+		`"version": "0.0.46"`,
 		`"customProperties":`,
 		`"displayName": "CYOps"`,
 		`"baseURL": "/api/plugins/cyops-console/"`,
@@ -206,13 +206,14 @@ func TestConsolePluginEntryIsServed(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		`cyops-console`,
-		`0.0.45`,
+		`0.0.46`,
 		`loadPluginEntry`,
-		`cyops-console@0.0.45`,
+		`cyops-console@0.0.46`,
 		`cyopsLauncherFlag`,
 		`data-cyops-plugin-entry`,
 		`pluginProxyBase`,
 		`apiBase + path`,
+		`X-CSRFToken`,
 		`window.setTimeout(start, 1000)`,
 		`data-cyops-launcher`,
 		`CYOps`,

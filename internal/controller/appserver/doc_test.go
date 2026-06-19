@@ -28,6 +28,9 @@ func TestDeploymentBuildsAppserverShape(t *testing.T) {
 	}
 	assertEnv(t, container.Env, "LIGHTSPEED_API_BASE_URL", "https://lightspeed.example.com")
 	assertEnv(t, container.Env, "LIGHTSPEED_CREDENTIALS_SECRET", "lightspeed-secret")
+	assertEnv(t, container.Env, "CYOPS_LIGHTSPEED_ENDPOINT", "https://lightspeed.example.com")
+	assertEnv(t, container.Env, "CYOPS_LIGHTSPEED_PROVIDER", "openai")
+	assertEnv(t, container.Env, "CYOPS_LIGHTSPEED_MODEL", "gpt-4.1")
 	assertEnv(t, container.Env, "CYOPS_EMBEDDING_ENDPOINT", "https://embedding.opsmate.svc/embed")
 	assertEnv(t, container.Env, "CYOPS_EMBEDDING_MODEL", "nomic-embed-text")
 	assertEnv(t, container.Env, "CYOPS_EMBEDDING_DIMENSIONS", "768")
@@ -38,6 +41,7 @@ func TestDeploymentBuildsAppserverShape(t *testing.T) {
 	assertEnv(t, container.Env, "CYOPS_ADMIN_GROUPS", "cyops-admins,cluster-admins")
 	assertEnv(t, container.Env, "CYOPS_LISTEN_ADDRESS", ":8443")
 	assertSecretEnv(t, container.Env, "CYOPS_EMBEDDING_TOKEN", "embedding-secret", "api-token")
+	assertSecretEnv(t, container.Env, "CYOPS_LIGHTSPEED_TOKEN", "lightspeed-secret", "token")
 	assertSecretEnv(t, container.Env, "CYOPS_POSTGRES_DSN", "pgvector-dsn", "dsn")
 	assertSecretEnv(t, container.Env, "CYOPS_ADMIN_TOKEN", "admin-token", "token")
 	assertEnv(t, container.Env, "POSTGRES_SERVICE_HOST", "sample-postgres")
