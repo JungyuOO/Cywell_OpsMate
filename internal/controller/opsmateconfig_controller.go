@@ -7,6 +7,7 @@ import (
 	"github.com/JungyuOO/Cywell_OpsMate/internal/controller/appserver"
 	"github.com/JungyuOO/Cywell_OpsMate/internal/controller/authproxy"
 	consoleplugin "github.com/JungyuOO/Cywell_OpsMate/internal/controller/console"
+	"github.com/JungyuOO/Cywell_OpsMate/internal/controller/gateway"
 	"github.com/JungyuOO/Cywell_OpsMate/internal/controller/postgres"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -36,7 +37,7 @@ func SetupOpsMateConfigReconciler(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups=opsmate.cywell.io,resources=opsmateconfigs/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch
-// +kubebuilder:rbac:groups="",resources=services;serviceaccounts,verbs=get;list;watch;create;update;patch
+// +kubebuilder:rbac:groups="",resources=services;serviceaccounts;configmaps,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=console.openshift.io,resources=consoleplugins,verbs=get;list;watch;create;update;patch
 // +kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch;create;update;patch
 func (r *OpsMateConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -51,6 +52,9 @@ func (r *OpsMateConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	for _, object := range []client.Object{
 		appserver.Deployment(config),
 		appserver.Service(config),
+		gateway.ConfigMap(config),
+		gateway.Deployment(config),
+		gateway.Service(config),
 		postgres.Deployment(config),
 		postgres.Service(config),
 	} {
@@ -350,6 +354,17 @@ func (r *OpsMateConfigReconciler) reconcileObject(ctx context.Context, desired c
 			current.ObjectMeta.OwnerReferences = desiredObject.ObjectMeta.OwnerReferences
 			current.Spec.Selector = desiredObject.Spec.Selector
 			current.Spec.Ports = desiredObject.Spec.Ports
+			return nil
+		})
+		return err
+	case *corev1.ConfigMap:
+		current := &corev1.ConfigMap{}
+		current.Name = key.Name
+		current.Namespace = key.Namespace
+		_, err := controllerutil.CreateOrUpdate(ctx, r.Client, current, func() error {
+			current.ObjectMeta.Labels = desiredObject.ObjectMeta.Labels
+			current.ObjectMeta.OwnerReferences = desiredObject.ObjectMeta.OwnerReferences
+			current.Data = desiredObject.Data
 			return nil
 		})
 		return err

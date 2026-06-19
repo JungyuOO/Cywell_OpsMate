@@ -39,8 +39,8 @@ func TestPluginBuildsConsolePluginShape(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if serviceName != "sample-appserver" {
-		t.Fatalf("service name = %q, want sample-appserver", serviceName)
+	if serviceName != "sample-gateway" {
+		t.Fatalf("service name = %q, want sample-gateway", serviceName)
 	}
 	serviceNamespace, _, err := unstructured.NestedString(plugin.Object, "spec", "backend", "service", "namespace")
 	if err != nil {
