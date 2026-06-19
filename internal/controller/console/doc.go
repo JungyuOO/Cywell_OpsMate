@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	opsmatev1alpha1 "github.com/JungyuOO/Cywell_OpsMate/api/v1alpha1"
-	"github.com/JungyuOO/Cywell_OpsMate/internal/controller/appserver"
+	"github.com/JungyuOO/Cywell_OpsMate/internal/controller/gateway"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -47,9 +47,9 @@ func Plugin(config *opsmatev1alpha1.OpsMateConfig) *unstructured.Unstructured {
 		"backend": map[string]any{
 			"type": "Service",
 			"service": map[string]any{
-				"name":      appserver.ResourceName(config),
+				"name":      gateway.ResourceName(config),
 				"namespace": config.Namespace,
-				"port":      int64(appserver.Port),
+				"port":      int64(gateway.Port),
 				"basePath":  "/",
 			},
 		},

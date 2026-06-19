@@ -48,13 +48,16 @@ func TestReconcileCreatesAppserverAndPostgresResources(t *testing.T) {
 	}
 
 	assertDeploymentExists(t, ctx, reconciler.Client, "sample-appserver")
+	assertDeploymentExists(t, ctx, reconciler.Client, "sample-gateway")
 	assertDeploymentExists(t, ctx, reconciler.Client, "sample-postgres")
 	assertDeploymentExists(t, ctx, reconciler.Client, "sample-admin-authproxy")
 	assertServiceExists(t, ctx, reconciler.Client, "sample-appserver")
+	assertServiceExists(t, ctx, reconciler.Client, "sample-gateway")
 	assertServiceExists(t, ctx, reconciler.Client, "sample-postgres")
 	assertServiceExists(t, ctx, reconciler.Client, "sample-admin-authproxy")
 	assertServiceAccountExists(t, ctx, reconciler.Client, "sample-admin-authproxy")
 	assertConsolePluginExists(t, ctx, reconciler.Client, "sample-console")
+	assertConfigMapExists(t, ctx, reconciler.Client, "sample-gateway")
 	assertRouteExists(t, ctx, reconciler.Client, "sample-admin-authproxy")
 
 	updated := &opsmatev1alpha1.OpsMateConfig{}
@@ -299,6 +302,17 @@ func assertServiceExists(t *testing.T, ctx context.Context, c client.Client, nam
 	}
 	if len(service.OwnerReferences) != 1 {
 		t.Fatalf("service %s owner references = %d, want 1", name, len(service.OwnerReferences))
+	}
+}
+
+func assertConfigMapExists(t *testing.T, ctx context.Context, c client.Client, name string) {
+	t.Helper()
+	configMap := &corev1.ConfigMap{}
+	if err := c.Get(ctx, client.ObjectKey{Namespace: "opsmate", Name: name}, configMap); err != nil {
+		t.Fatalf("configmap %s missing: %v", name, err)
+	}
+	if len(configMap.OwnerReferences) != 1 {
+		t.Fatalf("configmap %s owner references = %d, want 1", name, len(configMap.OwnerReferences))
 	}
 }
 

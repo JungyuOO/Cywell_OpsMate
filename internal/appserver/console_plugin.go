@@ -4,7 +4,7 @@ import "net/http"
 
 const consolePluginManifestJSON = `{
   "name": "cyops-console",
-  "version": "0.0.41",
+  "version": "0.0.42",
   "baseURL": "/api/plugins/cyops-console/",
   "loadScripts": [
     "plugin-entry.js"
@@ -35,7 +35,7 @@ const consolePluginManifestJSON = `{
 
 const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   name: "cyops-console",
-  version: "0.0.41",
+  version: "0.0.42",
   diagnosticsPath: "/console-plugin/diagnostics"
 };
 
@@ -226,7 +226,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
         start();
       },
       get: function () {
-        return Promise.reject(new Error("CYOps does not expose module federation modules in v0.0.41"));
+        return Promise.reject(new Error("CYOps does not expose module federation modules in v0.0.42"));
       },
     });
   } else {

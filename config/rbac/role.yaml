@@ -53,6 +53,7 @@ rules:
   resources:
   - services
   - serviceaccounts
+  - configmaps
   verbs:
   - get
   - list
