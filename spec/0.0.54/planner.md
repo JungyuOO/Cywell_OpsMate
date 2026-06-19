@@ -27,7 +27,7 @@
 | --- | --- | --- | --- |
 | Phase 1 | Remove injected document overlay and route navigation to the documents page | done | plugin entry tests |
 | Phase 2 | Restyle documents page as a Console-style page/table | done | documents asset tests |
-| Phase 3 | Package and CRC smoke | in progress | local tests and OLM dry-run |
+| Phase 3 | Package and CRC smoke | done | PR #219, CSV `cywell-opsmate.v0.0.54`, plugin asset smoke |
 
 Tracking issue: #218
 
@@ -57,4 +57,4 @@ Tracking issue: #218
 - [x] Documents page renders as a Console-like page with header, toolbar, and table rows.
 - [x] Go tests pass.
 - [x] OLM dry-run passes.
-- [ ] v0.0.54 is pushed through PR and CRC smoke is recorded.
+- [x] v0.0.54 is pushed through PR and CRC smoke is recorded.
