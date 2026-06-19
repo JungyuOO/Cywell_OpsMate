@@ -4,7 +4,7 @@ import "net/http"
 
 const consolePluginManifestJSON = `{
   "name": "cyops-console",
-  "version": "0.0.44",
+  "version": "0.0.45",
   "baseURL": "/api/plugins/cyops-console/",
   "loadScripts": [
     "plugin-entry.js"
@@ -43,7 +43,7 @@ const consolePluginManifestJSON = `{
 
 const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   name: "cyops-console",
-  version: "0.0.44",
+  version: "0.0.45",
   diagnosticsPath: "/console-plugin/diagnostics"
 };
 
@@ -52,15 +52,13 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   const launcherID = "cyops-console-launcher";
   const drawerID = "cyops-console-drawer";
   const styleID = "cyops-console-style";
+  const pluginScript = document.currentScript;
+  const pluginSource = pluginScript && pluginScript.src ? new URL(pluginScript.src, window.location.href) : null;
+  const pluginProxyBase = "/api/plugins/" + pluginName;
+  const apiBase = pluginSource && pluginSource.pathname.includes(pluginProxyBase) ? pluginProxyBase : "";
 
   function apiPath(path) {
-    const script = document.currentScript;
-    const source = script && script.src ? new URL(script.src, window.location.href) : null;
-    const marker = "/api/plugins/" + pluginName;
-    if (source && source.pathname.includes(marker)) {
-      return marker + path;
-    }
-    return path;
+    return apiBase + path;
   }
 
   function ensureStyle() {
@@ -229,7 +227,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   }
 
   function markEntryLoaded() {
-    document.documentElement.setAttribute("data-cyops-plugin-entry", "0.0.44");
+    document.documentElement.setAttribute("data-cyops-plugin-entry", "0.0.45");
   }
 
   function cyopsLauncherFlag() {
@@ -252,7 +250,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
       : null;
 
   if (registerPluginEntry) {
-    registerPluginEntry("cyops-console@0.0.44", pluginEntry);
+    registerPluginEntry("cyops-console@0.0.45", pluginEntry);
   }
   markEntryLoaded();
   start();

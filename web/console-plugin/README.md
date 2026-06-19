@@ -3,7 +3,7 @@
 This directory holds the frontend source contract for the CYOps OpenShift
 ConsolePlugin.
 
-v0.0.44 keeps the no-toolchain approach but now serves a standard OpenShift
+v0.0.45 keeps the no-toolchain approach but now serves a standard OpenShift
 dynamic plugin manifest and callback entry bundle. The appserver serves:
 
 - `/plugin-manifest.json`
@@ -16,7 +16,7 @@ The manifest includes `baseURL`, `loadScripts`, and
 `registrationMethod: "callback"`. It also exposes a `console.flag` extension
 with `$codeRef: "cyopsLauncherFlag"` so the Console runtime resolves the CYOps
 callback module. The entry script calls
-`window.loadPluginEntry("cyops-console@0.0.44", ...)`, injects the CYOps
+`window.loadPluginEntry("cyops-console@0.0.45", ...)`, injects the CYOps
 launcher, and uses only the Web Console plugin backend paths:
 
 - `/api/chat`
