@@ -3,13 +3,13 @@
 ## 1. Goal
 
 - Remove document management from the CYOps chat drawer.
-- Show document upload and management in a central OpenShift Console-style workspace when the left `자료` entry is selected.
+- Show document upload and management in a central OpenShift Console-style workspace when the left Documents entry is selected.
 - Replace query-string chat fallback with path-based GET chat so Console proxy forwarding does not drop the message.
 
 ## 2. Architecture Overview
 
 - Chat drawer remains focused on chat only.
-- `자료` navigation opens a central CYOps document workspace overlay aligned with the OpenShift Console content area.
+- The Documents navigation entry opens a central CYOps document workspace overlay aligned with the OpenShift Console content area.
 - Console plugin chat uses `GET /api/chat/message/<encoded-message>` when loaded through the OpenShift plugin proxy.
 - Direct clients keep using `POST /api/chat`.
 
@@ -27,9 +27,9 @@
 | --- | --- | --- | --- |
 | Phase 1 | Chat drawer cleanup and path chat fallback | done | appserver tests |
 | Phase 2 | Central document workspace | done | plugin entry tests |
-| Phase 3 | Packaging and CRC smoke | planned | pending |
+| Phase 3 | Packaging and CRC smoke | done | PR #217, CSV `cywell-opsmate.v0.0.53`, path chat smoke |
 
-Tracking issue: #216
+Tracking issue: #216 (closed by PR #217)
 
 ## 5. Migration Or Operations Strategy
 
@@ -52,9 +52,9 @@ Tracking issue: #216
 ## 8. Completion Criteria
 
 - [x] Chat drawer no longer contains document upload/list UI.
-- [x] `자료` opens a central document workspace.
+- [x] Documents navigation opens a central document workspace.
 - [x] Console proxy chat uses path-based GET fallback.
 - [x] Go tests pass: `go test ./...`.
 - [x] OLM dry-run passes: bundle manifests and CatalogSource.
-- [ ] v0.0.53 installs on CRC.
-- [ ] CRC backend smoke confirms path-based chat returns Lightspeed response.
+- [x] v0.0.53 installs on CRC: CSV `cywell-opsmate.v0.0.53` is `Succeeded`.
+- [x] CRC backend smoke confirms path-based chat returns Lightspeed response through `/api/chat/message/<encoded-message>`.
