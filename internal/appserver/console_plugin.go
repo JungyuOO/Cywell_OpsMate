@@ -4,7 +4,7 @@ import "net/http"
 
 const consolePluginManifestJSON = `{
   "name": "cyops-console",
-  "version": "0.0.49",
+  "version": "0.0.50",
   "baseURL": "/api/plugins/cyops-console/",
   "loadScripts": [
     "plugin-entry.js"
@@ -43,7 +43,7 @@ const consolePluginManifestJSON = `{
 
 const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   name: "cyops-console",
-  version: "0.0.49",
+  version: "0.0.50",
   diagnosticsPath: "/console-plugin/diagnostics"
 };
 
@@ -242,7 +242,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   }
 
   function markEntryLoaded() {
-    document.documentElement.setAttribute("data-cyops-plugin-entry", "0.0.49");
+    document.documentElement.setAttribute("data-cyops-plugin-entry", "0.0.50");
   }
 
   function cyopsLauncherFlag() {
@@ -265,7 +265,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
       : null;
 
   if (registerPluginEntry) {
-    registerPluginEntry("cyops-console@0.0.49", pluginEntry);
+    registerPluginEntry("cyops-console@0.0.50", pluginEntry);
   }
   markEntryLoaded();
   start();
