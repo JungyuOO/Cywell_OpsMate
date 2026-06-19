@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-cyops-to-lightspeed-app-server
+  namespace: openshift-lightspeed
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: application-server
+      app.kubernetes.io/managed-by: lightspeed-operator
+      app.kubernetes.io/name: lightspeed-service-api
+      app.kubernetes.io/part-of: openshift-lightspeed
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: cywell-opsmate-olm
+    ports:
+    - protocol: TCP
+      port: 8443

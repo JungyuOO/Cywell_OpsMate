@@ -38,7 +38,7 @@ func (p LightspeedProvider) Chat(request ProviderRequest) (ProviderResponse, err
 	}
 
 	body, err := json.Marshal(map[string]any{
-		"message":        request.Message,
+		"query":          request.Message,
 		"context":        request.Context,
 		"clusterContext": request.ClusterContext,
 	})
