@@ -83,6 +83,62 @@ func TestLightspeedProviderPostsToConfiguredEndpoint(t *testing.T) {
 	}
 }
 
+func TestDefaultLightspeedHTTPClientTrustBypassOnlyForClusterServiceHosts(t *testing.T) {
+	tests := []struct {
+		name        string
+		endpoint    string
+		wantDefault bool
+	}{
+		{
+			name:        "cluster service short name",
+			endpoint:    "https://lightspeed-app-server.openshift-lightspeed.svc:8443/v1/query",
+			wantDefault: false,
+		},
+		{
+			name:        "cluster service fqdn",
+			endpoint:    "https://lightspeed-app-server.openshift-lightspeed.svc.cluster.local:8443/v1/query",
+			wantDefault: false,
+		},
+		{
+			name:        "external https endpoint",
+			endpoint:    "https://api.example.com/v1/query",
+			wantDefault: true,
+		},
+		{
+			name:        "cluster service over http",
+			endpoint:    "http://lightspeed-app-server.openshift-lightspeed.svc:8080/v1/query",
+			wantDefault: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client := defaultLightspeedHTTPClient(test.endpoint)
+			gotDefault := client == http.DefaultClient
+			if gotDefault != test.wantDefault {
+				t.Fatalf("default client = %t, want %t", gotDefault, test.wantDefault)
+			}
+		})
+	}
+}
+
+func TestIsClusterServiceHost(t *testing.T) {
+	tests := []struct {
+		host string
+		want bool
+	}{
+		{host: "lightspeed-app-server.openshift-lightspeed.svc", want: true},
+		{host: "lightspeed-app-server.openshift-lightspeed.svc.cluster.local", want: true},
+		{host: "api.example.com", want: false},
+	}
+
+	for _, test := range tests {
+		if got := isClusterServiceHost(test.host); got != test.want {
+			t.Fatalf("isClusterServiceHost(%q) = %t, want %t", test.host, got, test.want)
+		}
+	}
+}
+
 func TestLightspeedProviderReadsOpenAIStyleResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

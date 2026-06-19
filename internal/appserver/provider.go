@@ -2,10 +2,12 @@ package appserver
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -34,7 +36,7 @@ func (p LightspeedProvider) Chat(request ProviderRequest) (ProviderResponse, err
 
 	client := p.Client
 	if client == nil {
-		client = http.DefaultClient
+		client = defaultLightspeedHTTPClient(p.Config.EndpointURL)
 	}
 
 	body, err := json.Marshal(map[string]any{
@@ -70,6 +72,22 @@ func (p LightspeedProvider) Chat(request ProviderRequest) (ProviderResponse, err
 		Answer:      answer,
 		RawProvider: "lightspeed",
 	}, nil
+}
+
+func defaultLightspeedHTTPClient(endpoint string) HTTPDoer {
+	parsed, err := url.Parse(endpoint)
+	if err != nil || parsed.Scheme != "https" || !isClusterServiceHost(parsed.Hostname()) {
+		return http.DefaultClient
+	}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	// CRC/OpenShift service-serving certificates are not in the base image trust
+	// store. Limit this bypass to in-cluster service DNS names.
+	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // #nosec G402
+	return &http.Client{Transport: transport}
+}
+
+func isClusterServiceHost(host string) bool {
+	return strings.HasSuffix(host, ".svc") || strings.Contains(host, ".svc.")
 }
 
 func extractProviderAnswer(body io.Reader) (string, error) {
