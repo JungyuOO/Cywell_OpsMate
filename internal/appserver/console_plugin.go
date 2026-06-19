@@ -4,7 +4,7 @@ import "net/http"
 
 const consolePluginManifestJSON = `{
   "name": "cyops-console",
-  "version": "0.0.40",
+  "version": "0.0.41",
   "baseURL": "/api/plugins/cyops-console/",
   "loadScripts": [
     "plugin-entry.js"
@@ -35,7 +35,7 @@ const consolePluginManifestJSON = `{
 
 const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   name: "cyops-console",
-  version: "0.0.40",
+  version: "0.0.41",
   diagnosticsPath: "/console-plugin/diagnostics"
 };
 
@@ -61,7 +61,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
     }
     const style = document.createElement("style");
     style.id = styleID;
-    style.textContent = ".cyops-launcher{position:fixed!important;right:92px!important;bottom:22px!important;z-index:2147483647!important;min-width:76px!important;height:48px!important;border-radius:8px!important;border:1px solid rgba(255,255,255,.58)!important;background:#151515!important;color:#fff!important;box-shadow:0 10px 30px rgba(0,0,0,.42)!important;font:700 14px 'Red Hat Text',system-ui,sans-serif!important;cursor:pointer!important;padding:0 16px!important;letter-spacing:0!important}.cyops-launcher:hover{background:#222!important}.cyops-drawer{position:fixed;right:22px;bottom:86px;z-index:2147483646;width:min(520px,calc(100vw - 32px));height:min(690px,calc(100vh - 120px));display:none;grid-template-rows:auto 1fr auto;background:#1f1f1f;color:#f5f5f5;border:1px solid rgba(255,255,255,.35);border-radius:8px;box-shadow:0 18px 48px rgba(0,0,0,.46);font:14px 'Red Hat Text',system-ui,sans-serif}.cyops-drawer[open]{display:grid}.cyops-drawer header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.16)}.cyops-drawer h2{font-size:20px;margin:0;letter-spacing:0}.cyops-icon-button{width:34px;height:34px;border-radius:4px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;cursor:pointer}.cyops-body{display:grid;grid-template-columns:minmax(0,1fr) 172px;min-height:0}.cyops-chat{display:grid;grid-template-rows:1fr auto;min-width:0;border-right:1px solid rgba(255,255,255,.14)}.cyops-messages{overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}.cyops-message{max-width:92%;padding:10px 12px;border-radius:6px;line-height:1.42;overflow-wrap:anywhere}.cyops-message.user{align-self:flex-end;background:#0066cc;color:#fff}.cyops-message.assistant{align-self:flex-start;background:#2d2d2d;color:#f5f5f5}.cyops-compose{display:grid;grid-template-columns:1fr 42px;gap:8px;padding:12px;border-top:1px solid rgba(255,255,255,.14)}.cyops-compose textarea{min-height:58px;max-height:120px;resize:vertical;border:1px solid #73bcf7;border-radius:6px;background:#262626;color:#fff;padding:10px;font:inherit}.cyops-send{width:42px;height:42px;border:0;border-radius:6px;background:#73bcf7;color:#111;font-weight:700;cursor:pointer}.cyops-docs{min-width:0;padding:14px;display:grid;grid-template-rows:auto auto 1fr;gap:10px}.cyops-docs h3{font-size:14px;margin:0}.cyops-file{display:block}.cyops-file input{width:100%;font-size:12px;color:#ddd}.cyops-doc-list{display:flex;flex-direction:column;gap:8px;overflow:auto}.cyops-doc-item{border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:8px;background:#262626}.cyops-doc-name{font-weight:700;overflow-wrap:anywhere}.cyops-doc-meta{font-size:12px;color:#c7c7c7;margin-top:3px}.cyops-status{min-height:18px;padding:0 18px 14px;color:#c7c7c7;font-size:12px}@media (max-width:720px){.cyops-launcher{right:78px!important;bottom:16px!important}.cyops-drawer{right:10px;left:10px;width:auto}.cyops-body{grid-template-columns:1fr}.cyops-chat{border-right:0}.cyops-docs{border-top:1px solid rgba(255,255,255,.14);grid-template-rows:auto auto auto}.cyops-doc-list{max-height:112px}}";
+    style.textContent = ".cyops-launcher{position:fixed!important;right:22px!important;bottom:22px!important;z-index:2147483647!important;min-width:76px!important;height:48px!important;border-radius:8px!important;border:1px solid rgba(255,255,255,.58)!important;background:#151515!important;color:#fff!important;box-shadow:0 10px 30px rgba(0,0,0,.42)!important;font:700 14px 'Red Hat Text',system-ui,sans-serif!important;cursor:pointer!important;padding:0 16px!important;letter-spacing:0!important}.cyops-launcher:hover{background:#222!important}.cyops-drawer{position:fixed;right:22px;bottom:86px;z-index:2147483646;width:min(520px,calc(100vw - 32px));height:min(690px,calc(100vh - 120px));display:none;grid-template-rows:auto 1fr auto;background:#1f1f1f;color:#f5f5f5;border:1px solid rgba(255,255,255,.35);border-radius:8px;box-shadow:0 18px 48px rgba(0,0,0,.46);font:14px 'Red Hat Text',system-ui,sans-serif}.cyops-drawer[open]{display:grid}.cyops-drawer header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.16)}.cyops-drawer h2{font-size:20px;margin:0;letter-spacing:0}.cyops-icon-button{width:34px;height:34px;border-radius:4px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;cursor:pointer}.cyops-body{display:grid;grid-template-columns:minmax(0,1fr) 172px;min-height:0}.cyops-chat{display:grid;grid-template-rows:1fr auto;min-width:0;border-right:1px solid rgba(255,255,255,.14)}.cyops-messages{overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}.cyops-message{max-width:92%;padding:10px 12px;border-radius:6px;line-height:1.42;overflow-wrap:anywhere}.cyops-message.user{align-self:flex-end;background:#0066cc;color:#fff}.cyops-message.assistant{align-self:flex-start;background:#2d2d2d;color:#f5f5f5}.cyops-compose{display:grid;grid-template-columns:1fr 42px;gap:8px;padding:12px;border-top:1px solid rgba(255,255,255,.14)}.cyops-compose textarea{min-height:58px;max-height:120px;resize:vertical;border:1px solid #73bcf7;border-radius:6px;background:#262626;color:#fff;padding:10px;font:inherit}.cyops-send{width:42px;height:42px;border:0;border-radius:6px;background:#73bcf7;color:#111;font-weight:700;cursor:pointer}.cyops-docs{min-width:0;padding:14px;display:grid;grid-template-rows:auto auto 1fr;gap:10px}.cyops-docs h3{font-size:14px;margin:0}.cyops-file{display:block}.cyops-file input{width:100%;font-size:12px;color:#ddd}.cyops-doc-list{display:flex;flex-direction:column;gap:8px;overflow:auto}.cyops-doc-item{border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:8px;background:#262626}.cyops-doc-name{font-weight:700;overflow-wrap:anywhere}.cyops-doc-meta{font-size:12px;color:#c7c7c7;margin-top:3px}.cyops-status{min-height:18px;padding:0 18px 14px;color:#c7c7c7;font-size:12px}@media (max-width:720px){.cyops-launcher{right:16px!important;bottom:16px!important}.cyops-drawer{right:10px;left:10px;width:auto}.cyops-body{grid-template-columns:1fr}.cyops-chat{border-right:0}.cyops-docs{border-top:1px solid rgba(255,255,255,.14);grid-template-rows:auto auto auto}.cyops-doc-list{max-height:112px}}";
     document.head.appendChild(style);
   }
 
@@ -121,7 +121,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
     launcher.textContent = "CYOps";
     Object.assign(launcher.style, {
       position: "fixed",
-      right: "92px",
+      right: "22px",
       bottom: "22px",
       zIndex: "2147483647",
       minWidth: "76px",
@@ -226,7 +226,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
         start();
       },
       get: function () {
-        return Promise.reject(new Error("CYOps does not expose module federation modules in v0.0.40"));
+        return Promise.reject(new Error("CYOps does not expose module federation modules in v0.0.41"));
       },
     });
   } else {
