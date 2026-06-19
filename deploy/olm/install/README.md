@@ -4,11 +4,11 @@ This directory describes the intended customer-facing install path.
 
 1. Publish the bundle image:
 
-   `ghcr.io/jungyuoo/cywell-opsmate-bundle:v0.0.48`
+   `ghcr.io/jungyuoo/cywell-opsmate-bundle:v0.0.49`
 
 2. Publish the catalog image:
 
-   `ghcr.io/jungyuoo/cywell-opsmate-catalog:v0.0.48`
+   `ghcr.io/jungyuoo/cywell-opsmate-catalog:v0.0.49`
 
 3. Create a `CatalogSource` named `cywell-opsmate-catalog` in `openshift-marketplace`.
 

@@ -60,8 +60,11 @@ func TestLightspeedProviderPostsToConfiguredEndpoint(t *testing.T) {
 	if response.Answer != "provider answer" {
 		t.Fatalf("answer = %q, want provider answer", response.Answer)
 	}
-	if !strings.Contains(body, `"message":"hello"`) {
-		t.Fatalf("request body = %q, want message", body)
+	if !strings.Contains(body, `"query":"hello"`) {
+		t.Fatalf("request body = %q, want query", body)
+	}
+	if strings.Contains(body, `"message"`) {
+		t.Fatalf("request body = %q, did not expect message; Lightspeed OLS API expects query", body)
 	}
 	if strings.Contains(body, `"model"`) {
 		t.Fatalf("request body = %q, did not expect model; model is selected by OLSConfig", body)
