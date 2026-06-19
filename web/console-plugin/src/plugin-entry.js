@@ -4,7 +4,7 @@ export const pluginName = 'cyops-console';
 
 export const cyopsPluginManifest = {
   name: pluginName,
-  version: '0.0.38',
+  version: '0.0.39',
   baseURL: '/api/plugins/cyops-console/',
   loadScripts: ['plugin-entry.js'],
   registrationMethod: 'callback',
@@ -14,6 +14,6 @@ export const cyopsPluginManifest = {
 export function registerCyopsPlugin(loadPluginEntry, mountUI) {
   loadPluginEntry(pluginName, {
     init: mountUI,
-    get: () => Promise.reject(new Error('CYOps does not expose module federation modules in v0.0.38')),
+    get: () => Promise.reject(new Error('CYOps does not expose module federation modules in v0.0.39')),
   });
 }
