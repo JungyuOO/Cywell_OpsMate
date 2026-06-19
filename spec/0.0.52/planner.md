@@ -28,7 +28,7 @@
 | --- | --- | --- | --- |
 | Phase 1 | Chat input and proxy-safe chat call | done | appserver tests |
 | Phase 2 | Left navigation document entry | done | plugin manifest/entry tests |
-| Phase 3 | Packaging and CRC smoke | planned | pending |
+| Phase 3 | Packaging and CRC smoke | done | CRC v0.0.52 CSV and backend smoke |
 
 Tracking issue: #214
 
@@ -57,5 +57,6 @@ Tracking issue: #214
 - [x] Left navigation exposes `자료` document management entry.
 - [x] Go tests pass: `go test ./...`.
 - [x] OLM dry-run passes: bundle manifests and CatalogSource.
-- [ ] v0.0.52 installs on CRC.
+- [x] v0.0.52 installs on CRC.
+- [x] CRC backend smoke confirms GET and POST chat return Lightspeed responses.
 - [ ] Browser smoke confirms chat no longer returns 403.
