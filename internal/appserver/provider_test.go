@@ -66,6 +66,12 @@ func TestLightspeedProviderPostsToConfiguredEndpoint(t *testing.T) {
 	if strings.Contains(body, `"message"`) {
 		t.Fatalf("request body = %q, did not expect message; Lightspeed OLS API expects query", body)
 	}
+	if strings.Contains(body, `"context"`) {
+		t.Fatalf("request body = %q, did not expect context; Lightspeed LLMRequest rejects additional fields", body)
+	}
+	if strings.Contains(body, `"clusterContext"`) {
+		t.Fatalf("request body = %q, did not expect clusterContext; Lightspeed LLMRequest rejects additional fields", body)
+	}
 	if strings.Contains(body, `"model"`) {
 		t.Fatalf("request body = %q, did not expect model; model is selected by OLSConfig", body)
 	}
