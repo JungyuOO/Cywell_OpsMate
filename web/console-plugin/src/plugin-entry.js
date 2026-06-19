@@ -4,7 +4,7 @@ export const pluginName = 'cyops-console';
 
 export const cyopsPluginManifest = {
   name: pluginName,
-  version: '0.0.46',
+  version: '0.0.47',
   baseURL: '/api/plugins/cyops-console/',
   loadScripts: ['plugin-entry.js'],
   registrationMethod: 'callback',
@@ -21,14 +21,14 @@ export const cyopsPluginManifest = {
 
 export function registerCyopsPlugin(loadPluginEntry, mountUI) {
   const markEntryLoaded = () => {
-    document.documentElement.setAttribute('data-cyops-plugin-entry', '0.0.46');
+    document.documentElement.setAttribute('data-cyops-plugin-entry', '0.0.47');
   };
   const cyopsLauncherFlag = () => {
     markEntryLoaded();
     mountUI();
     return Promise.resolve({ CYOPS_CONSOLE_LAUNCHER: true });
   };
-  loadPluginEntry(`${pluginName}@0.0.46`, {
+  loadPluginEntry(`${pluginName}@0.0.47`, {
     cyopsLauncherFlag: () => Promise.resolve(() => cyopsLauncherFlag),
   });
   markEntryLoaded();
