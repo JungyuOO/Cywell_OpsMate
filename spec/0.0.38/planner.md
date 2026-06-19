@@ -28,8 +28,8 @@
 | --- | --- | --- | --- |
 | Phase 1 | Dynamic plugin manifest and callback entry | done | appserver tests |
 | Phase 2 | CYOps launcher, chat, and document drawer | done | entry script browser smoke |
-| Phase 3 | v0.0.38 packaging and CRC install smoke | pending | OLM and browser evidence |
-| Phase 4 | Issue/PR handoff | pending | GitHub closure evidence |
+| Phase 3 | v0.0.38 packaging and CRC install smoke | done | OLM and endpoint evidence |
+| Phase 4 | Issue/PR handoff | done | GitHub closure evidence |
 
 Tracking issue: #186
 
@@ -61,5 +61,5 @@ Tracking issue: #186
 - [x] Entry script fires the `window.loadPluginEntry` callback.
 - [x] CYOps launcher and chat/document drawer are present in the entry bundle.
 - [x] Go tests pass.
-- [ ] v0.0.38 OLM packaging validates and installs on CRC.
-- [ ] GitHub Issue/PR workflow records the completed scope.
+- [x] v0.0.38 OLM packaging validates and installs on CRC.
+- [x] GitHub Issue/PR workflow records the completed scope.
