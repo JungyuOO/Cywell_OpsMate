@@ -11,8 +11,12 @@ export async function loadDiagnostics(fetchJSON) {
 }
 
 export const diagnosticsEntry = {
-  id: 'cyops.diagnostics',
-  title: 'CYOps Diagnostics',
-  path: '/console-plugin/diagnostics',
-  primaryEntry: 'openshift-web-console',
+  type: 'console.navigation/href',
+  properties: {
+    id: 'cyops-diagnostics',
+    name: 'CYOps Diagnostics',
+    href: '/console-plugin/diagnostics',
+    section: 'cyops',
+    perspective: 'admin',
+  },
 };

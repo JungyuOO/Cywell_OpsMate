@@ -76,6 +76,7 @@ func NewServerWithOptions(options ServerOptions) *Server {
 	}
 	server.mux.HandleFunc("/healthz", server.healthz)
 	server.mux.HandleFunc("/plugin-manifest.json", server.consolePluginManifest)
+	server.mux.HandleFunc("/plugin-entry.js", server.consolePluginEntry)
 	server.mux.HandleFunc("/console-plugin/plugin-manifest.json", server.consolePluginManifest)
 	server.mux.HandleFunc("/console-plugin/plugin-entry.js", server.consolePluginEntry)
 	server.mux.HandleFunc("/console-plugin/diagnostics", server.consoleDiagnostics)

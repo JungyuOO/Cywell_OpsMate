@@ -1,7 +1,7 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: cywell-opsmate.v0.0.37
+  name: cywell-opsmate.v0.0.38
   annotations:
     alm-examples: |-
       [
@@ -31,7 +31,7 @@ metadata:
     capabilities: Basic Install
     categories: AI/Machine Learning, Monitoring, OpenShift Optional
     certified: "false"
-    containerImage: ghcr.io/jungyuoo/cywell-opsmate:v0.0.37
+    containerImage: ghcr.io/jungyuoo/cywell-opsmate:v0.0.38
     description: CYOps integrates OpenShift operational assistance with a CYOps ConsolePlugin, Lightspeed API provider calls, and optional customer-document RAG.
     operators.operatorframework.io/builder: cywell
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
@@ -43,7 +43,7 @@ spec:
     CYOps installs an OpenShift Web Console plugin and backend operator that can
     route operational questions through Lightspeed-compatible APIs and optional
     customer-owned document retrieval.
-  version: 0.0.37
+  version: 0.0.38
   maturity: alpha
   provider:
     name: Cywell
@@ -181,7 +181,7 @@ spec:
                 runAsNonRoot: true
               containers:
               - name: manager
-                image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.37
+                image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.38
                 imagePullPolicy: IfNotPresent
                 command:
                 - /manager
@@ -212,6 +212,6 @@ spec:
       description: Configures the CYOps OpenShift ConsolePlugin, Lightspeed API integration, and optional RAG infrastructure.
   relatedImages:
   - name: manager
-    image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.37
+    image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.38
   - name: appserver
-    image: ghcr.io/jungyuoo/cywell-opsmate-appserver:v0.0.37
+    image: ghcr.io/jungyuoo/cywell-opsmate-appserver:v0.0.38

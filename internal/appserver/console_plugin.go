@@ -4,9 +4,14 @@ import "net/http"
 
 const consolePluginManifestJSON = `{
   "name": "cyops-console",
-  "version": "0.0.37",
+  "version": "0.0.38",
   "displayName": "CYOps",
   "description": "CYOps OpenShift operational assistant plugin.",
+  "baseURL": "/api/plugins/cyops-console/",
+  "loadScripts": [
+    "plugin-entry.js"
+  ],
+  "registrationMethod": "callback",
   "dependencies": {
     "@console/pluginAPI": "*"
   },
@@ -26,9 +31,187 @@ const consolePluginManifestJSON = `{
 
 const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   name: "cyops-console",
-  version: "0.0.37",
+  version: "0.0.38",
   diagnosticsPath: "/console-plugin/diagnostics"
-};`
+};
+
+(function () {
+  const pluginName = "cyops-console";
+  const launcherID = "cyops-console-launcher";
+  const drawerID = "cyops-console-drawer";
+  const styleID = "cyops-console-style";
+
+  function apiPath(path) {
+    const script = document.currentScript;
+    const source = script && script.src ? new URL(script.src, window.location.href) : null;
+    const marker = "/api/plugins/" + pluginName;
+    if (source && source.pathname.includes(marker)) {
+      return marker + path;
+    }
+    return path;
+  }
+
+  function ensureStyle() {
+    if (document.getElementById(styleID)) {
+      return;
+    }
+    const style = document.createElement("style");
+    style.id = styleID;
+    style.textContent = ".cyops-launcher{position:fixed;right:22px;bottom:22px;z-index:2147483000;width:52px;height:52px;border-radius:8px;border:1px solid rgba(255,255,255,.55);background:#151515;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.38);font:700 13px 'Red Hat Text',system-ui,sans-serif;cursor:pointer}.cyops-launcher:hover{background:#222}.cyops-drawer{position:fixed;right:22px;bottom:86px;z-index:2147482999;width:min(520px,calc(100vw - 32px));height:min(690px,calc(100vh - 120px));display:none;grid-template-rows:auto 1fr auto;background:#1f1f1f;color:#f5f5f5;border:1px solid rgba(255,255,255,.35);border-radius:8px;box-shadow:0 18px 48px rgba(0,0,0,.46);font:14px 'Red Hat Text',system-ui,sans-serif}.cyops-drawer[open]{display:grid}.cyops-drawer header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.16)}.cyops-drawer h2{font-size:20px;margin:0;letter-spacing:0}.cyops-icon-button{width:34px;height:34px;border-radius:4px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;cursor:pointer}.cyops-body{display:grid;grid-template-columns:minmax(0,1fr) 172px;min-height:0}.cyops-chat{display:grid;grid-template-rows:1fr auto;min-width:0;border-right:1px solid rgba(255,255,255,.14)}.cyops-messages{overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}.cyops-message{max-width:92%;padding:10px 12px;border-radius:6px;line-height:1.42;overflow-wrap:anywhere}.cyops-message.user{align-self:flex-end;background:#0066cc;color:#fff}.cyops-message.assistant{align-self:flex-start;background:#2d2d2d;color:#f5f5f5}.cyops-compose{display:grid;grid-template-columns:1fr 42px;gap:8px;padding:12px;border-top:1px solid rgba(255,255,255,.14)}.cyops-compose textarea{min-height:58px;max-height:120px;resize:vertical;border:1px solid #73bcf7;border-radius:6px;background:#262626;color:#fff;padding:10px;font:inherit}.cyops-send{width:42px;height:42px;border:0;border-radius:6px;background:#73bcf7;color:#111;font-weight:700;cursor:pointer}.cyops-docs{min-width:0;padding:14px;display:grid;grid-template-rows:auto auto 1fr;gap:10px}.cyops-docs h3{font-size:14px;margin:0}.cyops-file{display:block}.cyops-file input{width:100%;font-size:12px;color:#ddd}.cyops-doc-list{display:flex;flex-direction:column;gap:8px;overflow:auto}.cyops-doc-item{border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:8px;background:#262626}.cyops-doc-name{font-weight:700;overflow-wrap:anywhere}.cyops-doc-meta{font-size:12px;color:#c7c7c7;margin-top:3px}.cyops-status{min-height:18px;padding:0 18px 14px;color:#c7c7c7;font-size:12px}@media (max-width:720px){.cyops-drawer{right:10px;left:10px;width:auto}.cyops-body{grid-template-columns:1fr}.cyops-chat{border-right:0}.cyops-docs{border-top:1px solid rgba(255,255,255,.14);grid-template-rows:auto auto auto}.cyops-doc-list{max-height:112px}}";
+    document.head.appendChild(style);
+  }
+
+  function createMessage(text, role) {
+    const node = document.createElement("div");
+    node.className = "cyops-message " + role;
+    node.textContent = text;
+    return node;
+  }
+
+  async function requestJSON(path, options) {
+    const response = await fetch(apiPath(path), Object.assign({ credentials: "same-origin" }, options || {}));
+    if (!response.ok) {
+      throw new Error(path + " returned " + response.status);
+    }
+    return response.json();
+  }
+
+  async function refreshDocuments(root) {
+    const list = root.querySelector("[data-cyops-doc-list]");
+    list.replaceChildren();
+    const payload = await requestJSON("/api/documents");
+    const items = payload.items || [];
+    if (items.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "cyops-doc-item";
+      empty.textContent = "No documents";
+      list.appendChild(empty);
+      return;
+    }
+    for (const item of items) {
+      const row = document.createElement("div");
+      row.className = "cyops-doc-item";
+      const name = document.createElement("div");
+      name.className = "cyops-doc-name";
+      name.textContent = item.filename || item.id;
+      const meta = document.createElement("div");
+      meta.className = "cyops-doc-meta";
+      meta.textContent = (item.status || "uploaded") + " / " + (item.embeddingStatus || "pending");
+      row.append(name, meta);
+      list.appendChild(row);
+    }
+  }
+
+  function mountUI() {
+    if (document.getElementById(launcherID)) {
+      return;
+    }
+    ensureStyle();
+
+    const launcher = document.createElement("button");
+    launcher.id = launcherID;
+    launcher.className = "cyops-launcher";
+    launcher.type = "button";
+    launcher.setAttribute("aria-label", "Open CYOps");
+    launcher.setAttribute("data-cyops-launcher", "true");
+    launcher.textContent = "CY";
+
+    const drawer = document.createElement("section");
+    drawer.id = drawerID;
+    drawer.className = "cyops-drawer";
+    drawer.setAttribute("aria-label", "CYOps chat");
+    drawer.innerHTML = '<header><h2>CYOps</h2><button class="cyops-icon-button" type="button" aria-label="Close CYOps" data-cyops-close>x</button></header><div class="cyops-body"><div class="cyops-chat"><div class="cyops-messages" data-cyops-messages></div><form class="cyops-compose" data-cyops-compose><textarea name="message" placeholder="Ask a question..." aria-label="Ask CYOps"></textarea><button class="cyops-send" type="submit" aria-label="Send">Send</button></form></div><aside class="cyops-docs"><h3>Documents</h3><label class="cyops-file"><input type="file" data-cyops-upload></label><div class="cyops-doc-list" data-cyops-doc-list></div></aside></div><div class="cyops-status" data-cyops-status>Ready</div>';
+
+    document.body.append(launcher, drawer);
+
+    const messages = drawer.querySelector("[data-cyops-messages]");
+    const status = drawer.querySelector("[data-cyops-status]");
+    messages.appendChild(createMessage("CYOps is ready.", "assistant"));
+
+    launcher.addEventListener("click", async () => {
+      const open = drawer.hasAttribute("open");
+      if (open) {
+        drawer.removeAttribute("open");
+        return;
+      }
+      drawer.setAttribute("open", "");
+      try {
+        await refreshDocuments(drawer);
+      } catch (error) {
+        status.textContent = error.message;
+      }
+    });
+
+    drawer.querySelector("[data-cyops-close]").addEventListener("click", () => {
+      drawer.removeAttribute("open");
+    });
+
+    drawer.querySelector("[data-cyops-compose]").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const textarea = drawer.querySelector("textarea[name='message']");
+      const message = textarea.value.trim();
+      if (!message) {
+        return;
+      }
+      textarea.value = "";
+      messages.appendChild(createMessage(message, "user"));
+      status.textContent = "Thinking";
+      try {
+        const response = await requestJSON("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: message, provider: "lightspeed", rag: { enabled: true } }),
+        });
+        messages.appendChild(createMessage(response.answer || "No answer returned.", "assistant"));
+        status.textContent = "Ready";
+      } catch (error) {
+        messages.appendChild(createMessage(error.message, "assistant"));
+        status.textContent = "Error";
+      }
+      messages.scrollTop = messages.scrollHeight;
+    });
+
+    drawer.querySelector("[data-cyops-upload]").addEventListener("change", async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) {
+        return;
+      }
+      const form = new FormData();
+      form.append("file", file);
+      status.textContent = "Uploading";
+      try {
+        await requestJSON("/api/documents", { method: "POST", body: form });
+        await refreshDocuments(drawer);
+        status.textContent = "Ready";
+      } catch (error) {
+        status.textContent = error.message;
+      } finally {
+        event.target.value = "";
+      }
+    });
+  }
+
+  function start() {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", mountUI, { once: true });
+      return;
+    }
+    mountUI();
+  }
+
+  if (typeof window.loadPluginEntry === "function") {
+    window.loadPluginEntry(pluginName, {
+      init: function () {
+        start();
+      },
+      get: function () {
+        return Promise.reject(new Error("CYOps does not expose module federation modules in v0.0.38"));
+      },
+    });
+  } else {
+    start();
+  }
+})();`
 
 const consoleDiagnosticsHTML = `<!doctype html>
 <html lang="en">
