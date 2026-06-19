@@ -26,8 +26,8 @@
 | Phase | Scope | Status | Evidence |
 | --- | --- | --- | --- |
 | Phase 1 | Callback module map fix | done | appserver tests |
-| Phase 2 | OLM packaging and CRC upgrade | pending | OLM dry-run passed; publish pending |
-| Phase 3 | Issue/PR handoff | pending | GitHub evidence |
+| Phase 2 | OLM packaging and CRC upgrade | done | CRC CSV/gateway endpoint smoke |
+| Phase 3 | Issue/PR handoff | done | PR #197 merged and issue #196 closed |
 
 Tracking issue: #196
 
@@ -52,5 +52,5 @@ Tracking issue: #196
 - [x] Manifest contains `console.flag` with `$codeRef: cyopsLauncherFlag`.
 - [x] Entry uses `loadPluginEntry("cyops-console@0.0.43", moduleMap)`.
 - [x] Go tests pass.
-- [ ] v0.0.43 installs on CRC.
-- [ ] Gateway endpoint smoke confirms callback module map content.
+- [x] v0.0.43 installs on CRC.
+- [x] Gateway endpoint smoke confirms callback module map content.
