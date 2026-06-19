@@ -16,7 +16,7 @@ permissions:
 
 env:
   IMAGE_NAME: ghcr.io/jungyuoo/cywell-opsmate-bundle
-  IMAGE_VERSION: v0.0.45
+  IMAGE_VERSION: v0.0.46
 
 jobs:
   publish:

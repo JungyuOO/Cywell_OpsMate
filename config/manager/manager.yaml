@@ -21,7 +21,7 @@ spec:
       serviceAccountName: cywell-opsmate-controller-manager
       containers:
       - name: manager
-        image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.45
+        image: ghcr.io/jungyuoo/cywell-opsmate:v0.0.46
         imagePullPolicy: IfNotPresent
         command:
         - /manager

@@ -4,7 +4,7 @@ import "net/http"
 
 const consolePluginManifestJSON = `{
   "name": "cyops-console",
-  "version": "0.0.45",
+  "version": "0.0.46",
   "baseURL": "/api/plugins/cyops-console/",
   "loadScripts": [
     "plugin-entry.js"
@@ -43,7 +43,7 @@ const consolePluginManifestJSON = `{
 
 const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   name: "cyops-console",
-  version: "0.0.45",
+  version: "0.0.46",
   diagnosticsPath: "/console-plugin/diagnostics"
 };
 
@@ -79,7 +79,16 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   }
 
   async function requestJSON(path, options) {
-    const response = await fetch(apiPath(path), Object.assign({ credentials: "same-origin" }, options || {}));
+    const requestOptions = Object.assign({ credentials: "same-origin" }, options || {});
+    const method = (requestOptions.method || "GET").toUpperCase();
+    if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+      const headers = new Headers(requestOptions.headers || {});
+      if (!headers.has("X-CSRFToken")) {
+        headers.set("X-CSRFToken", "1");
+      }
+      requestOptions.headers = headers;
+    }
+    const response = await fetch(apiPath(path), requestOptions);
     if (!response.ok) {
       throw new Error(path + " returned " + response.status);
     }
@@ -227,7 +236,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   }
 
   function markEntryLoaded() {
-    document.documentElement.setAttribute("data-cyops-plugin-entry", "0.0.45");
+    document.documentElement.setAttribute("data-cyops-plugin-entry", "0.0.46");
   }
 
   function cyopsLauncherFlag() {
@@ -250,7 +259,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
       : null;
 
   if (registerPluginEntry) {
-    registerPluginEntry("cyops-console@0.0.45", pluginEntry);
+    registerPluginEntry("cyops-console@0.0.46", pluginEntry);
   }
   markEntryLoaded();
   start();

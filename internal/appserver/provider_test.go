@@ -38,10 +38,12 @@ func TestLightspeedProviderSkeletonDoesNotCallExternalAPI(t *testing.T) {
 
 func TestLightspeedProviderPostsToConfiguredEndpoint(t *testing.T) {
 	var body string
+	var authorization string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Fatalf("method = %s, want POST", r.Method)
 		}
+		authorization = r.Header.Get("Authorization")
 		buffer, _ := io.ReadAll(r.Body)
 		body = string(buffer)
 		w.Header().Set("Content-Type", "application/json")
@@ -49,7 +51,7 @@ func TestLightspeedProviderPostsToConfiguredEndpoint(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := LightspeedProvider{Config: LightspeedProviderConfig{EndpointURL: server.URL}}
+	provider := LightspeedProvider{Config: LightspeedProviderConfig{EndpointURL: server.URL, Token: "secret-token"}}
 
 	response, err := provider.Chat(ProviderRequest{Message: "hello"})
 	if err != nil {
@@ -60,5 +62,8 @@ func TestLightspeedProviderPostsToConfiguredEndpoint(t *testing.T) {
 	}
 	if !strings.Contains(body, `"message":"hello"`) {
 		t.Fatalf("request body = %q, want message", body)
+	}
+	if authorization != "Bearer secret-token" {
+		t.Fatalf("authorization = %q, want bearer token", authorization)
 	}
 }
