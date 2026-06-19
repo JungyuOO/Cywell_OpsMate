@@ -26,8 +26,8 @@
 | Phase | Scope | Status | Evidence |
 | --- | --- | --- | --- |
 | Phase 1 | Layer launcher over Lightspeed | done | appserver tests |
-| Phase 2 | Packaging and CRC smoke | pending | OLM and endpoint evidence |
-| Phase 3 | Issue/PR handoff | pending | GitHub evidence |
+| Phase 2 | Packaging and CRC smoke | done | CRC CSV/appserver endpoint evidence |
+| Phase 3 | Issue/PR handoff | done | PR #193 merged and issue #192 closed |
 
 Tracking issue: #192
 
@@ -51,4 +51,4 @@ Tracking issue: #192
 - [x] Launcher uses `bottom: 22px`.
 - [x] Launcher uses max z-index above Lightspeed.
 - [x] Go tests pass.
-- [ ] v0.0.41 packaging validates and installs on CRC.
+- [x] v0.0.41 packaging validates and installs on CRC.
