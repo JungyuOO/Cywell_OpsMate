@@ -4,7 +4,7 @@ import "net/http"
 
 const consolePluginManifestJSON = `{
   "name": "cyops-console",
-  "version": "0.0.46",
+  "version": "0.0.47",
   "baseURL": "/api/plugins/cyops-console/",
   "loadScripts": [
     "plugin-entry.js"
@@ -43,7 +43,7 @@ const consolePluginManifestJSON = `{
 
 const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   name: "cyops-console",
-  version: "0.0.46",
+  version: "0.0.47",
   diagnosticsPath: "/console-plugin/diagnostics"
 };
 
@@ -85,6 +85,12 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
       const headers = new Headers(requestOptions.headers || {});
       if (!headers.has("X-CSRFToken")) {
         headers.set("X-CSRFToken", "1");
+      }
+      if (!headers.has("X-CSRF-Token")) {
+        headers.set("X-CSRF-Token", "1");
+      }
+      if (!headers.has("X-Requested-With")) {
+        headers.set("X-Requested-With", "XMLHttpRequest");
       }
       requestOptions.headers = headers;
     }
@@ -236,7 +242,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   }
 
   function markEntryLoaded() {
-    document.documentElement.setAttribute("data-cyops-plugin-entry", "0.0.46");
+    document.documentElement.setAttribute("data-cyops-plugin-entry", "0.0.47");
   }
 
   function cyopsLauncherFlag() {
@@ -259,7 +265,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
       : null;
 
   if (registerPluginEntry) {
-    registerPluginEntry("cyops-console@0.0.46", pluginEntry);
+    registerPluginEntry("cyops-console@0.0.47", pluginEntry);
   }
   markEntryLoaded();
   start();

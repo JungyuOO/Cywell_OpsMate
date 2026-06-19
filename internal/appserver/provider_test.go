@@ -67,3 +67,39 @@ func TestLightspeedProviderPostsToConfiguredEndpoint(t *testing.T) {
 		t.Fatalf("authorization = %q, want bearer token", authorization)
 	}
 }
+
+func TestLightspeedProviderReadsOpenAIStyleResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"openai style answer"}}]}`))
+	}))
+	defer server.Close()
+
+	provider := LightspeedProvider{Config: LightspeedProviderConfig{EndpointURL: server.URL}}
+
+	response, err := provider.Chat(ProviderRequest{Message: "hello"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if response.Answer != "openai style answer" {
+		t.Fatalf("answer = %q, want openai style answer", response.Answer)
+	}
+}
+
+func TestLightspeedProviderReadsResponseField(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"response":"internal llm answer"}`))
+	}))
+	defer server.Close()
+
+	provider := LightspeedProvider{Config: LightspeedProviderConfig{EndpointURL: server.URL}}
+
+	response, err := provider.Chat(ProviderRequest{Message: "hello"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if response.Answer != "internal llm answer" {
+		t.Fatalf("answer = %q, want internal llm answer", response.Answer)
+	}
+}

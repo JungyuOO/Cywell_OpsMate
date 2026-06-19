@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 )
 
 type LightspeedProviderConfig struct {
@@ -66,16 +68,56 @@ func (p LightspeedProvider) Chat(request ProviderRequest) (ProviderResponse, err
 		return ProviderResponse{}, fmt.Errorf("lightspeed provider returned status %d", httpResponse.StatusCode)
 	}
 
-	var response struct {
-		Answer string `json:"answer"`
-	}
-	if err := json.NewDecoder(httpResponse.Body).Decode(&response); err != nil {
+	answer, err := extractProviderAnswer(httpResponse.Body)
+	if err != nil {
 		return ProviderResponse{}, err
 	}
 	return ProviderResponse{
-		Answer:      response.Answer,
+		Answer:      answer,
 		RawProvider: "lightspeed",
 	}, nil
+}
+
+func extractProviderAnswer(body io.Reader) (string, error) {
+	var payload any
+	if err := json.NewDecoder(body).Decode(&payload); err != nil {
+		return "", err
+	}
+	answer := findProviderAnswer(payload)
+	if answer == "" {
+		return "", fmt.Errorf("lightspeed provider response did not include answer text")
+	}
+	return answer, nil
+}
+
+func findProviderAnswer(value any) string {
+	switch typed := value.(type) {
+	case string:
+		return strings.TrimSpace(typed)
+	case []any:
+		for _, item := range typed {
+			if answer := findProviderAnswer(item); answer != "" {
+				return answer
+			}
+		}
+	case map[string]any:
+		for _, key := range []string{"answer", "response", "output", "content", "text", "generated_text"} {
+			if answer := findProviderAnswer(typed[key]); answer != "" {
+				return answer
+			}
+		}
+		for _, key := range []string{"message", "data", "result", "prediction"} {
+			if answer := findProviderAnswer(typed[key]); answer != "" {
+				return answer
+			}
+		}
+		for _, key := range []string{"choices", "outputs", "predictions"} {
+			if answer := findProviderAnswer(typed[key]); answer != "" {
+				return answer
+			}
+		}
+	}
+	return ""
 }
 
 func MinimalProviderContext(citations []Citation) []ProviderContext {
