@@ -25,8 +25,8 @@
 | Phase | Scope | Status | Evidence |
 | --- | --- | --- | --- |
 | Phase 1 | Scoped `.svc` TLS handling | done | provider tests |
-| Phase 2 | Package v0.0.51 | planned | pending |
-| Phase 3 | CRC chat smoke | planned | pending |
+| Phase 2 | Package v0.0.51 | done | PR #213, GitHub Actions |
+| Phase 3 | CRC chat smoke | done | CRC `/api/chat` HTTP 200 |
 
 Tracking issue: #212
 
@@ -55,5 +55,5 @@ Tracking issue: #212
 - [x] TLS bypass is scoped to OpenShift internal service DNS names.
 - [x] Go tests pass: `go test ./...`.
 - [x] OLM dry-run passes: bundle manifests and CatalogSource.
-- [ ] v0.0.51 installs on CRC.
-- [ ] CYOps `/api/chat` returns a Lightspeed answer on CRC.
+- [x] v0.0.51 installs on CRC.
+- [x] CYOps `/api/chat` returns a Lightspeed answer on CRC.
