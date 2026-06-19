@@ -25,8 +25,8 @@
 | Phase | Scope | Status | Evidence |
 | --- | --- | --- | --- |
 | Phase 1 | Header and response adapter | done | appserver tests |
-| Phase 2 | OLM packaging and CRC upgrade | in progress | Go tests and OLM dry-run passed |
-| Phase 3 | Issue/PR handoff | planned | pending |
+| Phase 2 | OLM packaging and CRC upgrade | done | CRC CSV `cywell-opsmate.v0.0.47` Succeeded |
+| Phase 3 | Issue/PR handoff | done | PR #205 merged, issue #204 closed |
 
 Tracking issue: #204
 
@@ -54,5 +54,7 @@ Tracking issue: #204
 - [x] Provider parses OpenAI-style and internal LLM response fields.
 - [x] Go tests pass.
 - [x] OLM dry-run passes.
-- [ ] v0.0.47 installs on CRC.
+- [x] v0.0.47 installs on CRC.
 - [ ] Browser chat smoke no longer gets 403.
+
+Browser chat smoke remains user-observed because the CRC console session must issue the proxied request from the authenticated browser context.
