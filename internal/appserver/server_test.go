@@ -161,11 +161,57 @@ func TestConsoleDocumentsViewIsServed(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		`CYOps Documents`,
+		`자료 관리`,
+		`cyops-table`,
 		`/console-plugin/documents.js`,
 		`data-cyops-view="documents"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("body = %q, want %q", body, want)
+		}
+	}
+}
+
+func TestConsoleDocumentsAssetsUsePageLayoutAndDocumentsAPI(t *testing.T) {
+	server := NewServer()
+	scriptRequest := httptest.NewRequest(http.MethodGet, "/console-plugin/documents.js", nil)
+	scriptRecorder := httptest.NewRecorder()
+
+	server.ServeHTTP(scriptRecorder, scriptRequest)
+
+	if scriptRecorder.Code != http.StatusOK {
+		t.Fatalf("script status = %d, want %d", scriptRecorder.Code, http.StatusOK)
+	}
+	script := scriptRecorder.Body.String()
+	for _, want := range []string{
+		`/api/documents`,
+		`cyops-empty`,
+		`cyops-row`,
+		`embeddingStatus`,
+		`sizeBytes`,
+	} {
+		if !strings.Contains(script, want) {
+			t.Fatalf("script = %q, want %q", script, want)
+		}
+	}
+
+	styleRequest := httptest.NewRequest(http.MethodGet, "/console-plugin/documents.css", nil)
+	styleRecorder := httptest.NewRecorder()
+
+	server.ServeHTTP(styleRecorder, styleRequest)
+
+	if styleRecorder.Code != http.StatusOK {
+		t.Fatalf("style status = %d, want %d", styleRecorder.Code, http.StatusOK)
+	}
+	style := styleRecorder.Body.String()
+	for _, want := range []string{
+		`.cyops-page-header`,
+		`.cyops-toolbar`,
+		`.cyops-table-header`,
+		`grid-template-columns`,
+	} {
+		if !strings.Contains(style, want) {
+			t.Fatalf("style = %q, want %q", style, want)
 		}
 	}
 }
@@ -186,7 +232,7 @@ func TestConsolePluginManifestIsServed(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		`"name": "\uC790\uB8CC"`,
-		`"version": "0.0.53"`,
+		`"version": "0.0.54"`,
 		`"customProperties":`,
 		`"displayName": "CYOps"`,
 		`"baseURL": "/api/plugins/cyops-console/"`,
@@ -233,9 +279,9 @@ func TestConsolePluginEntryIsServed(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		`cyops-console`,
-		`0.0.53`,
+		`0.0.54`,
 		`loadPluginEntry`,
-		`cyops-console@0.0.53`,
+		`cyops-console@0.0.54`,
 		`cyopsLauncherFlag`,
 		`data-cyops-plugin-entry`,
 		`pluginProxyBase`,
@@ -246,7 +292,7 @@ func TestConsolePluginEntryIsServed(t *testing.T) {
 		`event.key === "Enter"`,
 		`requestSubmit`,
 		`cyops-console-nav-documents`,
-		`cyops-doc-workspace`,
+		`window.location.assign("/console-plugin/documents")`,
 		`window.SERVER_FLAGS`,
 		`csrf-token`,
 		`X-CSRFToken`,
@@ -259,7 +305,6 @@ func TestConsolePluginEntryIsServed(t *testing.T) {
 		`bottom: "22px"`,
 		`2147483647`,
 		`/api/chat`,
-		`/api/documents`,
 		`provider: "lightspeed"`,
 		`/console-plugin/diagnostics`,
 	} {
@@ -269,6 +314,9 @@ func TestConsolePluginEntryIsServed(t *testing.T) {
 	}
 	if strings.Contains(body, `<aside class="cyops-docs"><h3>Documents</h3><label class="cyops-file"><input type="file" data-cyops-upload></label>`) {
 		t.Fatalf("chat drawer still contains document upload UI: %q", body)
+	}
+	if strings.Contains(body, `cyops-doc-workspace`) || strings.Contains(body, `cyops-document-manager`) {
+		t.Fatalf("plugin entry still contains overlay document workspace: %q", body)
 	}
 }
 

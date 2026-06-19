@@ -4,7 +4,7 @@ import "net/http"
 
 const consolePluginManifestJSON = `{
   "name": "cyops-console",
-  "version": "0.0.53",
+  "version": "0.0.54",
   "baseURL": "/api/plugins/cyops-console/",
   "loadScripts": [
     "plugin-entry.js"
@@ -53,7 +53,7 @@ const consolePluginManifestJSON = `{
 
 const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   name: "cyops-console",
-  version: "0.0.53",
+  version: "0.0.54",
   diagnosticsPath: "/console-plugin/diagnostics"
 };
 
@@ -61,7 +61,6 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   const pluginName = "cyops-console";
   const launcherID = "cyops-console-launcher";
   const drawerID = "cyops-console-drawer";
-  const documentManagerID = "cyops-document-manager";
   const navID = "cyops-console-nav-documents";
   const styleID = "cyops-console-style";
   const pluginScript = document.currentScript;
@@ -79,7 +78,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
     }
     const style = document.createElement("style");
     style.id = styleID;
-    style.textContent = ".cyops-launcher{position:fixed!important;right:22px!important;bottom:22px!important;z-index:2147483647!important;min-width:76px!important;height:48px!important;border-radius:8px!important;border:1px solid rgba(255,255,255,.58)!important;background:#151515!important;color:#fff!important;box-shadow:0 10px 30px rgba(0,0,0,.42)!important;font:700 14px 'Red Hat Text',system-ui,sans-serif!important;cursor:pointer!important;padding:0 16px!important;letter-spacing:0!important}.cyops-launcher:hover{background:#222!important}.cyops-drawer{position:fixed;right:22px;bottom:86px;z-index:2147483646;width:min(520px,calc(100vw - 32px));height:min(690px,calc(100vh - 120px));display:none;grid-template-rows:auto 1fr auto;background:#1f1f1f;color:#f5f5f5;border:1px solid rgba(255,255,255,.35);border-radius:8px;box-shadow:0 18px 48px rgba(0,0,0,.46);font:14px 'Red Hat Text',system-ui,sans-serif}.cyops-drawer[open]{display:grid}.cyops-drawer header,.cyops-doc-workspace header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.16)}.cyops-drawer h2,.cyops-doc-workspace h2{font-size:20px;margin:0;letter-spacing:0}.cyops-icon-button{width:34px;height:34px;border-radius:4px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;cursor:pointer}.cyops-body{display:grid;grid-template-columns:minmax(0,1fr);min-height:0}.cyops-chat{display:grid;grid-template-rows:1fr auto;min-width:0}.cyops-messages{overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}.cyops-message{max-width:92%;padding:10px 12px;border-radius:6px;line-height:1.42;overflow-wrap:anywhere}.cyops-message.user{align-self:flex-end;background:#0066cc;color:#fff}.cyops-message.assistant{align-self:flex-start;background:#2d2d2d;color:#f5f5f5}.cyops-compose{display:grid;grid-template-columns:1fr 42px;gap:8px;padding:12px;border-top:1px solid rgba(255,255,255,.14)}.cyops-compose textarea{min-height:58px;max-height:120px;resize:vertical;border:1px solid #73bcf7;border-radius:6px;background:#262626;color:#fff;padding:10px;font:inherit}.cyops-send{width:42px;height:42px;border:0;border-radius:6px;background:#73bcf7;color:#111;font-weight:700;cursor:pointer}.cyops-doc-workspace{position:fixed;left:max(286px,15vw);right:32px;top:118px;bottom:36px;z-index:2147483645;display:none;grid-template-rows:auto auto 1fr auto;background:#1f1f1f;color:#f5f5f5;border:1px solid rgba(255,255,255,.28);border-radius:8px;box-shadow:0 18px 48px rgba(0,0,0,.42);font:14px 'Red Hat Text',system-ui,sans-serif}.cyops-doc-workspace[open]{display:grid}.cyops-docs{min-width:0;padding:18px;display:grid;grid-template-rows:auto auto 1fr;gap:14px}.cyops-docs h3{font-size:14px;margin:0}.cyops-file{display:flex;align-items:center;gap:10px}.cyops-file input{font-size:12px;color:#ddd}.cyops-doc-list{display:flex;flex-direction:column;gap:8px;overflow:auto}.cyops-doc-item{border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:10px 12px;background:#262626}.cyops-doc-name{font-weight:700;overflow-wrap:anywhere}.cyops-doc-meta{font-size:12px;color:#c7c7c7;margin-top:3px}.cyops-status{min-height:18px;padding:0 18px 14px;color:#c7c7c7;font-size:12px}@media (max-width:720px){.cyops-launcher{right:16px!important;bottom:16px!important}.cyops-drawer{right:10px;left:10px;width:auto}.cyops-doc-workspace{left:10px;right:10px;top:96px;bottom:16px}.cyops-body{grid-template-columns:1fr}}";
+    style.textContent = ".cyops-launcher{position:fixed!important;right:22px!important;bottom:22px!important;z-index:2147483647!important;min-width:76px!important;height:48px!important;border-radius:8px!important;border:1px solid rgba(255,255,255,.58)!important;background:#151515!important;color:#fff!important;box-shadow:0 10px 30px rgba(0,0,0,.42)!important;font:700 14px 'Red Hat Text',system-ui,sans-serif!important;cursor:pointer!important;padding:0 16px!important;letter-spacing:0!important}.cyops-launcher:hover{background:#222!important}.cyops-drawer{position:fixed;right:22px;bottom:86px;z-index:2147483646;width:min(520px,calc(100vw - 32px));height:min(690px,calc(100vh - 120px));display:none;grid-template-rows:auto 1fr auto;background:#1f1f1f;color:#f5f5f5;border:1px solid rgba(255,255,255,.35);border-radius:8px;box-shadow:0 18px 48px rgba(0,0,0,.46);font:14px 'Red Hat Text',system-ui,sans-serif}.cyops-drawer[open]{display:grid}.cyops-drawer header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.16)}.cyops-drawer h2{font-size:20px;margin:0;letter-spacing:0}.cyops-icon-button{width:34px;height:34px;border-radius:4px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;cursor:pointer}.cyops-body{display:grid;grid-template-columns:minmax(0,1fr);min-height:0}.cyops-chat{display:grid;grid-template-rows:1fr auto;min-width:0}.cyops-messages{overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}.cyops-message{max-width:92%;padding:10px 12px;border-radius:6px;line-height:1.42;overflow-wrap:anywhere}.cyops-message.user{align-self:flex-end;background:#0066cc;color:#fff}.cyops-message.assistant{align-self:flex-start;background:#2d2d2d;color:#f5f5f5}.cyops-compose{display:grid;grid-template-columns:1fr 42px;gap:8px;padding:12px;border-top:1px solid rgba(255,255,255,.14)}.cyops-compose textarea{min-height:58px;max-height:120px;resize:vertical;border:1px solid #73bcf7;border-radius:6px;background:#262626;color:#fff;padding:10px;font:inherit}.cyops-send{width:42px;height:42px;border:0;border-radius:6px;background:#73bcf7;color:#111;font-weight:700;cursor:pointer}.cyops-status{min-height:18px;padding:0 18px 14px;color:#c7c7c7;font-size:12px}@media (max-width:720px){.cyops-launcher{right:16px!important;bottom:16px!important}.cyops-drawer{right:10px;left:10px;width:auto}.cyops-body{grid-template-columns:1fr}}";
     document.head.appendChild(style);
   }
 
@@ -141,49 +140,12 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
     });
   }
 
-  async function refreshDocuments(root) {
-    const list = root.querySelector("[data-cyops-doc-list]");
-    list.replaceChildren();
-    const payload = await requestJSON("/api/documents");
-    const items = payload.items || [];
-    if (items.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "cyops-doc-item";
-      empty.textContent = "No documents";
-      list.appendChild(empty);
-      return;
-    }
-    for (const item of items) {
-      const row = document.createElement("div");
-      row.className = "cyops-doc-item";
-      const name = document.createElement("div");
-      name.className = "cyops-doc-name";
-      name.textContent = item.filename || item.id;
-      const meta = document.createElement("div");
-      meta.className = "cyops-doc-meta";
-      meta.textContent = (item.status || "uploaded") + " / " + (item.embeddingStatus || "pending");
-      row.append(name, meta);
-      list.appendChild(row);
-    }
-  }
-
   function openDocumentManager() {
-    mountUI();
-    const panel = document.getElementById(documentManagerID);
-    if (!panel) {
-      return;
-    }
     const drawer = document.getElementById(drawerID);
     if (drawer) {
       drawer.removeAttribute("open");
     }
-    panel.setAttribute("open", "");
-    refreshDocuments(panel).catch((error) => {
-      const status = panel.querySelector("[data-cyops-status]");
-      if (status) {
-        status.textContent = error.message;
-      }
-    });
+    window.location.assign("/console-plugin/documents");
   }
 
   function ensureNavigationEntry() {
@@ -254,13 +216,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
     drawer.setAttribute("aria-label", "CYOps chat");
     drawer.innerHTML = '<header><h2>CYOps</h2><button class="cyops-icon-button" type="button" aria-label="Close CYOps" data-cyops-close>x</button></header><div class="cyops-body"><div class="cyops-chat"><div class="cyops-messages" data-cyops-messages></div><form class="cyops-compose" data-cyops-compose><textarea name="message" placeholder="Ask a question..." aria-label="Ask CYOps"></textarea><button class="cyops-send" type="submit" aria-label="Send">Send</button></form></div></div><div class="cyops-status" data-cyops-status>Ready</div>';
 
-    const documentManager = document.createElement("section");
-    documentManager.id = documentManagerID;
-    documentManager.className = "cyops-doc-workspace";
-    documentManager.setAttribute("aria-label", "CYOps document manager");
-    documentManager.innerHTML = '<header><h2>&#51088;&#47308; &#44288;&#47532;</h2><button class="cyops-icon-button" type="button" aria-label="Close CYOps documents" data-cyops-close-docs>x</button></header><section class="cyops-docs"><h3>Documents</h3><label class="cyops-file"><input type="file" data-cyops-upload><span>Upload from computer</span></label><div class="cyops-doc-list" data-cyops-doc-list></div></section><div class="cyops-status" data-cyops-status>Ready</div>';
-
-    document.body.append(launcher, drawer, documentManager);
+    document.body.append(launcher, drawer);
 
     const messages = drawer.querySelector("[data-cyops-messages]");
     const status = drawer.querySelector("[data-cyops-status]");
@@ -278,10 +234,6 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
     drawer.querySelector("[data-cyops-close]").addEventListener("click", () => {
       drawer.removeAttribute("open");
     });
-    documentManager.querySelector("[data-cyops-close-docs]").addEventListener("click", () => {
-      documentManager.removeAttribute("open");
-    });
-
     drawer.querySelector("textarea[name='message']").addEventListener("keydown", (event) => {
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
@@ -310,25 +262,6 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
       messages.scrollTop = messages.scrollHeight;
     });
 
-    documentManager.querySelector("[data-cyops-upload]").addEventListener("change", async (event) => {
-      const file = event.target.files && event.target.files[0];
-      if (!file) {
-        return;
-      }
-      const form = new FormData();
-      form.append("file", file);
-      const managerStatus = documentManager.querySelector("[data-cyops-status]");
-      managerStatus.textContent = "Uploading";
-      try {
-        await requestJSON("/api/documents", { method: "POST", body: form });
-        await refreshDocuments(documentManager);
-        managerStatus.textContent = "Ready";
-      } catch (error) {
-        managerStatus.textContent = error.message;
-      } finally {
-        event.target.value = "";
-      }
-    });
   }
 
   function start() {
@@ -343,7 +276,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   }
 
   function markEntryLoaded() {
-    document.documentElement.setAttribute("data-cyops-plugin-entry", "0.0.53");
+    document.documentElement.setAttribute("data-cyops-plugin-entry", "0.0.54");
   }
 
   function cyopsLauncherFlag() {
@@ -366,7 +299,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
       : null;
 
   if (registerPluginEntry) {
-    registerPluginEntry("cyops-console@0.0.53", pluginEntry);
+    registerPluginEntry("cyops-console@0.0.54", pluginEntry);
   }
   markEntryLoaded();
   start();
@@ -582,19 +515,29 @@ const consoleDocumentsHTML = `<!doctype html>
 </head>
 <body>
   <main class="cyops-documents" data-cyops-view="documents">
-    <header class="cyops-header">
+    <header class="cyops-page-header">
       <div>
-        <p class="cyops-kicker">CYOps</p>
-        <h1>Documents</h1>
+        <h1>자료 관리</h1>
+        <p class="cyops-description">고객사 운영 문서를 업로드하고 CYOps 응답에 사용할 자료 상태를 관리합니다.</p>
       </div>
       <button id="refresh" class="cyops-button" type="button">Refresh</button>
     </header>
-    <form id="upload" class="cyops-upload">
-      <input id="file" name="file" type="file">
-      <button class="cyops-button" type="submit">Upload</button>
-    </form>
-    <section id="status" class="cyops-status" aria-live="polite">Loading documents...</section>
-    <section id="documents" class="cyops-list" aria-label="CYOps documents"></section>
+    <section class="cyops-toolbar" aria-label="Document actions">
+      <form id="upload" class="cyops-upload">
+        <input id="file" name="file" type="file">
+        <button class="cyops-button cyops-primary" type="submit">Upload</button>
+      </form>
+      <section id="status" class="cyops-status" aria-live="polite">Loading documents...</section>
+    </section>
+    <section class="cyops-table" aria-label="CYOps documents">
+      <div class="cyops-table-header" role="row">
+        <span>Name</span>
+        <span>Status</span>
+        <span>Embedding</span>
+        <span>Size</span>
+      </div>
+      <section id="documents" class="cyops-list"></section>
+    </section>
   </main>
   <script type="module" src="/console-plugin/documents.js"></script>
 </body>
@@ -603,75 +546,125 @@ const consoleDocumentsHTML = `<!doctype html>
 const consoleDocumentsCSS = `:root {
   color-scheme: light dark;
   font-family: "Red Hat Text", system-ui, sans-serif;
-  background: Canvas;
-  color: CanvasText;
+  background: transparent;
+  color: #f5f5f5;
 }
 
 body {
+  background: transparent;
   margin: 0;
 }
 
 .cyops-documents {
   box-sizing: border-box;
   min-height: 100vh;
-  padding: 24px;
+  padding: 24px 28px;
 }
 
-.cyops-header {
+.cyops-page-header {
   align-items: center;
-  border-bottom: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-}
-
-.cyops-kicker {
-  font-size: 12px;
-  font-weight: 700;
-  margin: 0 0 4px;
-  text-transform: uppercase;
+  margin-bottom: 18px;
 }
 
 h1 {
-  font-size: 24px;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: 0;
   margin: 0;
 }
 
+.cyops-description {
+  color: #c7c7c7;
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 8px 0 0;
+}
+
 .cyops-button {
-  border: 1px solid color-mix(in srgb, CanvasText 30%, transparent);
+  border: 1px solid #8a8d90;
   border-radius: 4px;
-  background: ButtonFace;
-  color: ButtonText;
+  background: #3c3f42;
+  color: #fff;
   cursor: pointer;
   font: inherit;
   min-height: 36px;
   padding: 0 14px;
 }
 
+.cyops-button:hover {
+  background: #4f5255;
+}
+
+.cyops-primary {
+  background: #73bcf7;
+  border-color: #73bcf7;
+  color: #151515;
+  font-weight: 700;
+}
+
+.cyops-primary:hover {
+  background: #9ad3ff;
+}
+
+.cyops-toolbar {
+  align-items: center;
+  border-bottom: 1px solid #6a6e73;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 0 16px;
+}
+
 .cyops-upload {
   align-items: center;
   display: flex;
   gap: 12px;
-  margin-bottom: 16px;
+}
+
+.cyops-upload input {
+  color: #f5f5f5;
+  font: inherit;
 }
 
 .cyops-status {
-  margin-bottom: 16px;
   min-height: 20px;
+  color: #c7c7c7;
+  font-size: 13px;
+  text-align: right;
+}
+
+.cyops-table {
+  display: grid;
+  margin-top: 20px;
+}
+
+.cyops-table-header,
+.cyops-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.8fr) minmax(120px, .8fr) minmax(140px, .9fr) minmax(96px, .6fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.cyops-table-header {
+  border-bottom: 1px solid #6a6e73;
+  color: #d2d2d2;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 42px;
 }
 
 .cyops-list {
   display: grid;
-  gap: 10px;
 }
 
 .cyops-row {
-  border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
-  border-radius: 6px;
-  display: grid;
-  padding: 12px;
+  border-bottom: 1px solid #4f5255;
+  min-height: 54px;
+  padding: 8px 0;
 }
 
 .cyops-name {
@@ -680,9 +673,41 @@ h1 {
 }
 
 .cyops-meta {
-  color: color-mix(in srgb, CanvasText 70%, transparent);
+  color: #c7c7c7;
   font-size: 12px;
-  margin-top: 4px;
+}
+
+.cyops-empty {
+  border-bottom: 1px solid #4f5255;
+  color: #f5f5f5;
+  min-height: 54px;
+  padding: 16px 0;
+}
+
+@media (max-width: 760px) {
+  .cyops-documents {
+    padding: 18px;
+  }
+
+  .cyops-page-header,
+  .cyops-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cyops-status {
+    text-align: left;
+  }
+
+  .cyops-table-header {
+    display: none;
+  }
+
+  .cyops-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 12px 0;
+  }
 }`
 
 const consoleDocumentsJS = `const statusEl = document.querySelector("#status");
@@ -708,7 +733,7 @@ function renderDocuments(items) {
   listEl.replaceChildren();
   if (!items.length) {
     const empty = document.createElement("div");
-    empty.className = "cyops-row";
+    empty.className = "cyops-empty";
     empty.textContent = "No documents";
     listEl.appendChild(empty);
     return;
@@ -719,10 +744,16 @@ function renderDocuments(items) {
     const name = document.createElement("div");
     name.className = "cyops-name";
     name.textContent = item.filename || item.id;
-    const meta = document.createElement("div");
-    meta.className = "cyops-meta";
-    meta.textContent = [item.status || "uploaded", item.embeddingStatus || "pending", item.sizeBytes ? item.sizeBytes + " bytes" : ""].filter(Boolean).join(" / ");
-    row.append(name, meta);
+    const status = document.createElement("div");
+    status.className = "cyops-meta";
+    status.textContent = item.status || "uploaded";
+    const embedding = document.createElement("div");
+    embedding.className = "cyops-meta";
+    embedding.textContent = item.embeddingStatus || "pending";
+    const size = document.createElement("div");
+    size.className = "cyops-meta";
+    size.textContent = item.sizeBytes ? item.sizeBytes + " bytes" : "-";
+    row.append(name, status, embedding, size);
     listEl.appendChild(row);
   }
 }

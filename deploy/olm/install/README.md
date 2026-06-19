@@ -1,14 +1,14 @@
-﻿# CYOps OLM Install
+# CYOps OLM Install
 
 This directory describes the intended customer-facing install path.
 
 1. Publish the bundle image:
 
-   `ghcr.io/jungyuoo/cywell-opsmate-bundle:v0.0.53`
+   `ghcr.io/jungyuoo/cywell-opsmate-bundle:v0.0.54`
 
 2. Publish the catalog image:
 
-   `ghcr.io/jungyuoo/cywell-opsmate-catalog:v0.0.53`
+   `ghcr.io/jungyuoo/cywell-opsmate-catalog:v0.0.54`
 
 3. Create a `CatalogSource` named `cywell-opsmate-catalog` in `openshift-marketplace`.
 
