@@ -4,9 +4,7 @@ import "net/http"
 
 const consolePluginManifestJSON = `{
   "name": "cyops-console",
-  "version": "0.0.38",
-  "displayName": "CYOps",
-  "description": "CYOps OpenShift operational assistant plugin.",
+  "version": "0.0.39",
   "baseURL": "/api/plugins/cyops-console/",
   "loadScripts": [
     "plugin-entry.js"
@@ -14,6 +12,12 @@ const consolePluginManifestJSON = `{
   "registrationMethod": "callback",
   "dependencies": {
     "@console/pluginAPI": "*"
+  },
+  "customProperties": {
+    "console": {
+      "displayName": "CYOps",
+      "description": "CYOps OpenShift operational assistant plugin."
+    }
   },
   "extensions": [
     {
@@ -31,7 +35,7 @@ const consolePluginManifestJSON = `{
 
 const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
   name: "cyops-console",
-  version: "0.0.38",
+  version: "0.0.39",
   diagnosticsPath: "/console-plugin/diagnostics"
 };
 
@@ -205,7 +209,7 @@ const consolePluginEntryJS = `window.__CYOPS_CONSOLE_PLUGIN__ = {
         start();
       },
       get: function () {
-        return Promise.reject(new Error("CYOps does not expose module federation modules in v0.0.38"));
+        return Promise.reject(new Error("CYOps does not expose module federation modules in v0.0.39"));
       },
     });
   } else {

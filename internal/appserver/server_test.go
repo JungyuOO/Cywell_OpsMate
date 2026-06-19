@@ -3,6 +3,7 @@ package appserver
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"mime/multipart"
@@ -160,7 +161,8 @@ func TestConsolePluginManifestIsServed(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		`"name": "cyops-console"`,
-		`"version": "0.0.38"`,
+		`"version": "0.0.39"`,
+		`"customProperties":`,
 		`"displayName": "CYOps"`,
 		`"baseURL": "/api/plugins/cyops-console/"`,
 		`"loadScripts":`,
@@ -172,6 +174,17 @@ func TestConsolePluginManifestIsServed(t *testing.T) {
 		if !strings.Contains(body, want) {
 			t.Fatalf("body = %q, want %q", body, want)
 		}
+	}
+
+	var manifest map[string]any
+	if err := json.Unmarshal([]byte(body), &manifest); err != nil {
+		t.Fatalf("manifest is not json: %v", err)
+	}
+	if _, ok := manifest["displayName"]; ok {
+		t.Fatalf("manifest has top-level displayName, want displayName under customProperties.console")
+	}
+	if _, ok := manifest["description"]; ok {
+		t.Fatalf("manifest has top-level description, want description under customProperties.console")
 	}
 }
 
@@ -191,7 +204,7 @@ func TestConsolePluginEntryIsServed(t *testing.T) {
 	body := recorder.Body.String()
 	for _, want := range []string{
 		`cyops-console`,
-		`0.0.38`,
+		`0.0.39`,
 		`window.loadPluginEntry`,
 		`data-cyops-launcher`,
 		`/api/chat`,
