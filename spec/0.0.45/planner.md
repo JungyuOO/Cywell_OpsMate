@@ -25,8 +25,8 @@
 | Phase | Scope | Status | Evidence |
 | --- | --- | --- | --- |
 | Phase 1 | Proxy API path fix | done | appserver tests |
-| Phase 2 | OLM packaging and CRC upgrade | in progress | Go tests and OLM dry-run passed |
-| Phase 3 | Issue/PR handoff | planned | pending |
+| Phase 2 | OLM packaging and CRC upgrade | done | CRC CSV and gateway smoke passed |
+| Phase 3 | Issue/PR handoff | done | PR #201 merged and issue #200 closed |
 
 Tracking issue: #200
 
@@ -53,5 +53,6 @@ Tracking issue: #200
 - [x] Event handlers reuse that base for chat and document requests.
 - [x] Go tests pass.
 - [x] OLM dry-run passes.
-- [ ] v0.0.45 installs on CRC.
-- [ ] Gateway/browser smoke confirms chat no longer calls Console root `/api/chat`.
+- [x] v0.0.45 installs on CRC.
+- [x] Gateway smoke confirms proxy-base entry content.
+- [ ] Browser smoke confirms chat no longer calls Console root `/api/chat`.
