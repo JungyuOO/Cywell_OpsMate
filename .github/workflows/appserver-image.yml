@@ -1,4 +1,4 @@
-﻿name: appserver-image
+name: appserver-image
 
 on:
   push:
@@ -20,7 +20,7 @@ permissions:
 
 env:
   IMAGE_NAME: ghcr.io/jungyuoo/cywell-opsmate-appserver
-  IMAGE_VERSION: v0.0.53
+  IMAGE_VERSION: v0.0.54
 
 jobs:
   publish:
